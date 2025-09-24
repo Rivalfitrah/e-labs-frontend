@@ -1,9 +1,10 @@
 <script setup>
 import Login from './components/Login.vue'
+import Sidebar from './components/Sidebar.vue'
 </script>
 
 <template>
-  <Login/>
+  <Sidebar/>
 </template>
 <style scoped>
 </style>
