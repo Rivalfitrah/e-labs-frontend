@@ -76,7 +76,7 @@ const togglePeminjaman = () => {
           </div>
         </div>
 
-        // <!-- Additional Menu Items -->
+        <!-- Additional Menu Items -->
         <div>
           <a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-secondary/10 transition-all duration-200 group">
             <Users class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
@@ -107,7 +107,7 @@ const togglePeminjaman = () => {
       </nav>
     </div>
 
-    // <!-- Footer Section -->
+    <!-- Footer Section -->
     <div class="p-4 border-t border-secondary/20">
       <a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-secondary/10 transition-all duration-200 group">
         <Settings class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
