@@ -1,7 +1,21 @@
 @import "tailwindcss";
 
+/* Reset and apply Geist font globally */
+* {
+    font-family: 'Geist', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+html, body {
+    font-family: 'Geist', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Override Tailwind's font-sans */
+.font-sans {
+    font-family: 'Geist', ui-sans-serif, system-ui, sans-serif !important;
+}
+
 @theme {
     --color-primary: #1C5A3C;
     --color-secondary: #FEF7FF;
-    --font-sans: 'Geist', sans-serif;
+    --font-sans: Geist, ui-sans-serif, system-ui, sans-serif;
 }
