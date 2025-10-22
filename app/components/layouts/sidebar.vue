@@ -31,9 +31,15 @@
         { name: "Ruangan", icon: Building2, link: "/admin/peminjaman/ruangan" },
       ],
     },
-    { name: "Pengguna", icon: Users, href: "/admin/users" },
-    { name: "Laporan", icon: BarChart3, href: "/admin/reports" },
-    { name: "Jadwal", icon: Calendar, href: "/admin/schedule" },
+    {
+      name: "List",
+      icon: ClipboardList,
+      submenus: [
+        { name: "Barang", icon: Package, link: "/admin/list/barang" },
+        { name: "Ruangan", icon: Building2, link: "/admin/list/ruangan" },
+      ],
+    },
+
   ];
 </script>
 
