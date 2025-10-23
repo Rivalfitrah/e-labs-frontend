@@ -12,5 +12,4 @@ console.log(listBarang())
 
 <template>
   <UiInfoBox />
-
 </template>

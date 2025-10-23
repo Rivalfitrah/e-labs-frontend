@@ -25,34 +25,35 @@ import UiInfoBox from '~/components/ui/infoBox.vue'
   </div>
 
 
-  <table class="w-full border-collapse rounded-md">
-      <thead>
-        <tr>
-          <th class="bg-primary text-white text-left px-4 py-2">No</th>
-          <th class="bg-primary text-white text-left px-4 py-2">NIM</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Nama Mahasiswa</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Nama matakuliah</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Jam Mulai</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Jam Selesai</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Gedung</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Data rows will go here -->
-         <tr>
-          <th class="">1</th>
-          <td>123456</td>
-          <td>John Doe</td>
-          <td>Matematika</td>
-          <td>08:00</td>
-          <td>10:00</td>
-          <td>Gedung A</td>
-          <td>
-            <button class="bg-blue-500 text-white px-2 py-1 rounded-md">Setujui</button>
-            <button class="bg-red-500 text-white px-2 py-1 rounded-md">Tolak</button>
-          </td>
-         </tr>
-      </tbody>
-    </table>
+  <table class="w-full border-separate border-spacing-0 rounded-xl overflow-hidden shadow-md">
+  <thead>
+    <tr class="bg-primary text-white text-sm uppercase tracking-wide">
+      <th class="text-left px-5 py-3">No</th>
+      <th class="text-left px-5 py-3">NIM</th>
+      <th class="text-left px-5 py-3">Nama Mahasiswa</th>
+      <th class="text-left px-5 py-3">Nama Matakuliah</th>
+      <th class="text-left px-5 py-3">Jam Mulai</th>
+      <th class="text-left px-5 py-3">Jam Selesai</th>
+      <th class="text-left px-5 py-3">Gedung</th>
+      <th class="text-center px-5 py-3">Aksi</th>
+    </tr>
+  </thead>
+
+  <tbody class="text-gray-700 text-sm">
+    <tr class="hover:bg-gray-50 transition">
+      <td class="px-5 py-4">1</td>
+      <td class="px-5 py-4">123456</td>
+      <td class="px-5 py-4">John Doe</td>
+      <td class="px-5 py-4">Matematika</td>
+      <td class="px-5 py-4">08:00</td>
+      <td class="px-5 py-4">10:00</td>
+      <td class="px-5 py-4">Gedung A</td>
+      <td class="px-5 py-4 text-center space-x-2">
+        <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md shadow-sm">Setujui</button>
+        <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md shadow-sm">Tolak</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
 </template>

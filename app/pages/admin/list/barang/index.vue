@@ -5,8 +5,13 @@ definePageMeta({
   layout: 'dashboard'
 })
 import { listBarang } from '~/lib/api'
+import { onMounted, ref } from 'vue'
 
-console.log(listBarang())
+const barang = ref([])
+onMounted(async () => {
+  const data = await listBarang()
+  barang.value = data
+})
 
 </script>
 
@@ -29,18 +34,39 @@ console.log(listBarang())
   </div>
 
 
-  <table class="w-full border-collapse rounded-md">
-      <thead>
-        <tr>
-          <th class="bg-primary text-white text-left px-4 py-2">No</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Foto</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Nama Barang</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Kode Barang</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Merk</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Kondisi</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Jumlah</th>
-          <th class="bg-primary text-white text-left px-4 py-2">Aksi</th>
-        </tr>
-      </thead>
-    </table>
+  <table class="w-full border-separate border-spacing-0 rounded-xl overflow-hidden shadow-md">
+  <thead>
+    <tr class="bg-primary text-white text-sm uppercase tracking-wide">
+      <th class="text-left px-5 py-3">No</th>
+      <th class="text-left px-5 py-3">Foto</th>
+      <th class="text-left px-5 py-3">Nama Barang</th>
+      <th class="text-left px-5 py-3">Kode barang</th>
+      <th class="text-left px-5 py-3">Merk</th>
+      <th class="text-left px-5 py-3">Kondisi</th>
+      <th class="text-left px-5 py-3">Jumlah</th>
+      <th class="text-center px-5 py-3">Aksi</th>
+    </tr>
+  </thead>
+
+  <tbody class="text-gray-700 text-sm">
+    <tr v-for="(data, index) in barang" :key="index" class="hover:bg-gray-50 transition">
+      <td class="px-5 py-4">{{ index + 1 }}</td>
+      <td class="px-5 py-4">
+        <div class="w-14 h-14 rounded-full overflow-hidden border border-gray-300">
+          <img src="/logo.jpg" alt="Foto Barang" class="w-full h-full object-cover" />
+        </div>
+        </td>
+      <td class="px-5 py-4">{{ data.nama_barang }}</td>
+      <td class="px-5 py-4">{{ data.kode_barang }}</td>
+      <td class="px-5 py-4">{{ data.merk }}</td>
+      <td class="px-5 py-4">{{ data.kondisi }}</td>
+      <td class="px-5 py-4">{{ data.jumlah }}</td>
+      <td class="px-5 py-4 text-center space-x-2">
+        <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md shadow-sm">Setujui</button>
+        <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md shadow-sm">Tolak</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
 </template>
