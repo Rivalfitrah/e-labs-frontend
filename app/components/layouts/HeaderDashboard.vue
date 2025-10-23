@@ -1,5 +1,15 @@
 <script setup>
 import { LogOut } from "lucide-vue-next";
+import { ref } from "vue";
+
+const user = ref(null)
+
+onMounted(() => {
+  const storedUser = localStorage.getItem('user')
+  if (storedUser) {
+    user.value = JSON.parse(storedUser)
+  }
+})
 
 </script>
 
@@ -23,7 +33,7 @@ import { LogOut } from "lucide-vue-next";
         />
       </div>
       <span class="hidden md:inline text-[#243B83] font-medium">
-        admin
+        {{ user ? user.nama : 'Guest' }}
       </span>
     </div>
   </header>
