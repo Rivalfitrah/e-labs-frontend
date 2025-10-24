@@ -1,7 +1,7 @@
 <script setup>
 import Swal from 'sweetalert2'
 import { ref } from 'vue'
-import { Login } from '~/lib/api'
+import { Login } from '~/lib/api/auth'
 import { useRouter } from 'vue-router'
 
 const email = ref("")
@@ -45,13 +45,13 @@ const handleLogin = async () => {
 
             <form @submit.prevent="handleLogin">
                 <div class="mt-10">
-                    <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
-                    <input v-model="email" type="text" id="username" class="mt-2 block w-full px-3 py-3 border rounded-xl">
+                    <label for="username" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input v-model="email" type="text" placeholder="Enter your email" id="username" class="mt-2 block w-full px-3 py-3 border rounded-xl">
                 </div>
 
                 <div class="mt-6">
                     <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                    <input v-model="password" type="password" id="password" class="mt-2 block w-full px-3 py-3 border rounded-xl">
+                    <input v-model="password" type="password" placeholder="Enter your password" id="password" class="mt-2 block w-full px-3 py-3 border rounded-xl">
                 </div>
 
                 <div class="mt-6">

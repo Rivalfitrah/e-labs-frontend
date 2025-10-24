@@ -15,7 +15,7 @@
                     <nuxt-link to="/jadwal" class="text-primary hover:text-primary/50 transition">Jadwal</nuxt-link>
                 </div>
                 <div>
-                    <nuxt-link to="/login">
+                    <nuxt-link to="/auth/login">
                         <button class="bg-primary text-secondary px-4 py-2 rounded-lg shadow hover:bg-primary/90 transition cursor-pointer">
                             Login
                         </button>

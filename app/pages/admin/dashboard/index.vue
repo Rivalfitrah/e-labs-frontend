@@ -4,7 +4,7 @@ import { Search } from 'lucide-vue-next'
 definePageMeta({
   layout: 'dashboard'
 })
-import { listBarang } from '~/lib/api'
+import { listBarang } from '~/lib/api/auth'
 
 console.log(listBarang())
 
