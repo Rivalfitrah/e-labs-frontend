@@ -2,7 +2,7 @@
 import UiInfoBox from '~/components/ui/infoBox.vue'
 import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Upload } from 'lucide-vue-next'
 // Perhatian: Saya menambahkan createBarang, asumsikan fungsi ini ada di api.js
-import { listBarang, storage_URL, updateBarang, deleteBarang, createBarang } from '~/lib/api/barang' 
+import { listBarang, storage_URL, updateBarang, deleteBarang, createBarang, getDashboardBarang } from '~/lib/api/barang' 
 import { onMounted, ref, computed } from 'vue' 
 import Swal from 'sweetalert2'
 
@@ -13,6 +13,22 @@ definePageMeta({
 // State for data
 const barang = ref([])
 const isLoading = ref(true)
+
+// State for dashboard statistics (dummy initial value, replace with real fetch if needed)
+const dashboardStats = ref(null)
+
+onMounted(async () => {
+  try {
+    const data = await getDashboardBarang()
+    // Jika respons API kamu seperti contoh prompt, gunakan .data
+    dashboardStats.value = data.data
+    // ...existing code...
+  } catch (error) {
+    dashboardStats.value = null
+    // ...existing code...
+  }
+})
+
 
 // State untuk notifikasi (Toast sederhana)
 const notification = ref({ show: false, message: '', type: 'success' });
@@ -447,7 +463,7 @@ const newImagePreviewUrl = computed(() => {
 
 <template>
   
-  <UiInfoBox />
+  
 
   <!-- Toast Notification -->
   <transition 
@@ -468,7 +484,38 @@ const newImagePreviewUrl = computed(() => {
       {{ notification.message }}
     </div>
   </transition>
-  
+    <div class="mb-6">
+   
+    
+    <div v-if="dashboardStats" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+
+      <UiInfoBox type="total">
+        <template #title>Total Barang</template>
+        {{ dashboardStats.overview.total }}
+      </UiInfoBox>
+      
+      <UiInfoBox type="tersedia">
+        <template #title>Tersedia</template>
+        {{ dashboardStats.overview.tersedia }}
+      </UiInfoBox>
+      
+      <UiInfoBox type="dipinjam">
+        <template #title>Dipinjam</template>
+        {{ dashboardStats.overview.dipinjam }}
+      </UiInfoBox>
+      
+      <UiInfoBox type="rusak">
+        <template #title>Rusak</template>
+        {{ dashboardStats.overview.rusak }}
+      </UiInfoBox>
+      
+      <UiInfoBox type="tidak-tersedia">
+        <template #title>Tidak Tersedia</template>
+        {{ dashboardStats.overview.tidak_tersedia }}
+      </UiInfoBox>
+
+    </div>
+  </div>
   <div class="flex flex-col md:flex-row md:items-center gap-2 mb-4">
     <div class="flex relative w-full">
       <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -495,9 +542,10 @@ const newImagePreviewUrl = computed(() => {
   <div v-else-if="barang.length === 0" class="text-center py-8 text-lg text-gray-500 border border-dashed rounded-lg p-10 bg-white">
     Tidak ada data barang yang ditemukan. Silakan tambahkan barang baru.
   </div>
-
+  
   
   <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
+    
     <table class="w-full border-separate border-spacing-0">
       <thead>
         <tr class="bg-primary text-white text-center text-sm uppercase tracking-wider">
@@ -507,6 +555,7 @@ const newImagePreviewUrl = computed(() => {
           <th class="text-center  px-5 py-3 w-32">Kode</th>
           <th class="text-center  px-5 py-3 w-40">Merk</th>
           <th class="text-center  px-5 py-3 w-32">Kondisi</th>
+          <th class="text-center  px-5 py-3 w-20">Status</th>
           <th class="text-center  px-5 py-3 w-20">Jumlah</th>
           <th class="text-center px-5 py-3 w-32">Aksi</th>
         </tr>
@@ -536,6 +585,8 @@ const newImagePreviewUrl = computed(() => {
               {{ data.kondisi }}
             </span>
           </td>
+          <td class="px-5 py-3 font-mono align-middle">{{ data.status }}</td>
+
           <td class="px-5 py-3 font-mono align-middle">{{ data.jumlah }}</td>
           <td class="px-5 py-3 text-center align-middle">
             <div class="flex justify-center items-center gap-2">

@@ -1,13 +1,16 @@
 <script setup>
 import { LogOut, CircleUserRound } from "lucide-vue-next";
-import { ref } from "vue";
-import { Logout } from "~/lib/api/auth";
+import { ref, onMounted } from "vue";
+import { Logout, getProfile } from "~/lib/api/auth";
 const user = ref(null)
 
-onMounted(() => {
-  const storedUser = localStorage.getItem('user')
-  if (storedUser) {
-    user.value = JSON.parse(storedUser)
+onMounted(async () => {
+  try {
+    const profileData = await getProfile()
+    user.value = profileData
+    console.log('Fetched profile data:', profileData)
+  } catch (error) {
+    console.error('Error fetching profile:', error)
   }
 })
 
@@ -43,7 +46,7 @@ const handleLogout = async () => {
         <CircleUserRound :size="40" class="text-white" />
       </div>
       <span class="hidden md:inline text-[#243B83] font-medium">
-        {{ user ? user.nama : 'Guest' }}
+        {{ user && user.data ? user.data.nama : 'Guest' }}
       </span>
     </div>
   </header>

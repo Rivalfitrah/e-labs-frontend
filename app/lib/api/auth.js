@@ -36,3 +36,16 @@ export async function Logout(){
     }
 }
 
+export async function getProfile(){
+    try{
+        const response = await axios.get(
+            `${base_URL}/api/auth/me`,
+            { withCredentials: true }
+        );
+        console.log('Profile response:', response.data);
+        return response.data;
+    }catch(error){
+        console.error('Error fetching profile:', error);
+        throw error;
+    }
+}

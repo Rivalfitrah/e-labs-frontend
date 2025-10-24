@@ -3,26 +3,24 @@ import axios from 'axios'
 
 // filepath: d:\Fahri\codebase\projects ssmt5\backend-express\e-labs-frontend\app\lib\api.js
 const base_URL = useRuntimeConfig().public.NUXT_PUBLIC_API_URL || 'http://localhost:3001'
-export const storage_URL = useRuntimeConfig().public.NUXT_PUBLIC_STORAGE_URL || 'http://localhost:3001/storage'
-export async function listBarang() {
+export async function listRuangan() {
     try {
-        const token = localStorage.getItem('token')  // ambil token dulu
-        const response = await axios.get(`${base_URL}/api/admin/master/barang`, {
+        const response = await axios.get(`${base_URL}/api/admin/master/ruangan`, {
             withCredentials: true,
         })
-        console.log('Fetched barang data:', response.data.data)
+        console.log('Fetched ruangan data:', response.data.data)
         return response.data.data
     } catch (error) {
-        console.error('Error fetching barang:', error)
+        console.error('Error fetching ruangan:', error)
         throw error
     }
 }
 
-export async function updateBarang(id, formData) {
+export async function updateRuangan(id, formData) {
     // Token ada di httpOnly cookies, tidak perlu set Authorization header manual
     try {
         const response = await axios.patch(
-            `${base_URL}/api/admin/master/barang/${id}`,
+            `${base_URL}/api/admin/master/ruangan/${id}`,
             formData,
             {
                 withCredentials: true,
@@ -31,37 +29,37 @@ export async function updateBarang(id, formData) {
                 }
             }
         );
-        console.log('Update barang response:', response.data);
+        console.log('Update ruangan response:', response.data);
         return response.data;
     } catch (error) {
-        console.error('Error during update barang:', error);
+        console.error('Error during update ruangan:', error);
         throw error;
     }
 }
 
-export async function deleteBarang(id) {
+export async function deleteRuangan(id) {
     try {
         const response = await axios.delete(
-            `${base_URL}/api/admin/master/barang/delete/${id}`,
+            `${base_URL}/api/admin/master/ruangan/delete/${id}`,
             {
                 withCredentials: true
             }
         );
-        console.log('Delete barang response:', response.data);
+        console.log('Delete ruangan response:', response.data);
         return response.data;
     } catch (error) {
-        console.error('Error during delete barang:', error);
+        console.error('Error during delete ruangan:', error);
         throw error;
     } finally{
         // No operation needed here
     }
 }
 
-export async function createBarang(formData) {
+export async function createRuangan(formData) {
     // Token ada di httpOnly cookies, tidak perlu set Authorization header manual
     try {
         const response = await axios.post(
-            `${base_URL}/api/admin/master/barang`,
+            `${base_URL}/api/admin/master/ruangan`,
             formData,
             {
                 withCredentials: true,
@@ -70,23 +68,23 @@ export async function createBarang(formData) {
                 }
             }
         );
-        console.log('Create barang response:', response.data);
+        console.log('Create ruangan response:', response.data);
         return response.data;
     } catch (error) {
-        console.error('Error during create barang:', error);
+        console.error('Error during create ruangan:', error);
         throw error;
     }
 }
 
-export async function getDashboardBarang() {
+export async function getDashboardRuangan() {
     try{
-        const response = await axios.get(`${base_URL}/api/admin/master/barang/dashboard`, {
+        const response = await axios.get(`${base_URL}/api/admin/master/ruangan/dashboard`, {
             withCredentials: true
         });
-        console.log('Dashboard barang data:', response.data);
+        console.log('Dashboard ruangan data:', response.data);
         return response.data;
     }catch(error){
-        console.error('Error fetching dashboard barang:', error)
+        console.error('Error fetching dashboard ruangan:', error)
         throw error
     }
 }
