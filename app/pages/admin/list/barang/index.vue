@@ -58,12 +58,12 @@ onMounted(async () => {
         </td>
       <td class="px-5 py-4">{{ data.nama_barang }}</td>
       <td class="px-5 py-4">{{ data.kode_barang }}</td>
-      <td class="px-5 py-4">{{ data.merk }}</td>
+      <td class="px-5 py-4">{{ data.merek }}</td>
       <td class="px-5 py-4">{{ data.kondisi }}</td>
       <td class="px-5 py-4">{{ data.jumlah }}</td>
       <td class="px-5 py-4 text-center space-x-2">
-        <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md shadow-sm">Setujui</button>
-        <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md shadow-sm">Tolak</button>
+        <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md shadow-sm">Edit</button>
+        <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md shadow-sm">Delete</button>
       </td>
     </tr>
   </tbody>
