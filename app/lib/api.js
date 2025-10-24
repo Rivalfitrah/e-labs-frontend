@@ -1,8 +1,8 @@
 
 import axios from 'axios'
 
-const base_URL = process.env.NUXT_PUBLIC_API_URL || 'http://localhost:3001'
-
+// filepath: d:\Fahri\codebase\projects ssmt5\backend-express\e-labs-frontend\app\lib\api.js
+const base_URL = useRuntimeConfig().public.NUXT_PUBLIC_API_URL || 'http://localhost:3001'
 export async function listBarang() {
     try {
         const token = localStorage.getItem('token')  // ambil token dulu
