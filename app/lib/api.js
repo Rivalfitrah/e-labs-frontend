@@ -1,7 +1,7 @@
 
 import axios from 'axios'
 
-const base_URL = 'https://test-e-labs.vercel.app'
+const base_URL = process.env.NUXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 export async function listBarang() {
     try {
@@ -19,17 +19,17 @@ export async function listBarang() {
     }
 }
 
-
-export async function Login (email, password) {
+export async function Login(email, password) {
     try {
-        const response = await axios.post(`${base_URL}/api/auth/login`, {
-            email,
-            password
-        })
-        console.log('Login response:', response.data)
-        return response.data
+        const response = await axios.post(
+            `${base_URL}/api/auth/login`,
+            { email, password },
+            { withCredentials: true } // <-- penting!
+        );
+        console.log('Login response:', response.data);
+        return response.data;
     } catch (error) {
-        console.error('Error during login:', error)
-        throw error
+        console.error('Error during login:', error);
+        throw error;
     }
 }
