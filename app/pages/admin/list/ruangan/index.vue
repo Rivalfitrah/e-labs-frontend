@@ -1,11 +1,11 @@
 <script setup>
 import UiInfoBox from '~/components/ui/infoBox.vue'
-import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Home } from 'lucide-vue-next'
+import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, QrCode } from 'lucide-vue-next'
 // Asumsikan fungsi API Ruangan berada di lokasi yang sama atau sudah diimpor
-// Saya asumsikan nama file API yang relevan:
-import { listRuangan, updateRuangan, deleteRuangan, createRuangan } from '~/lib/api/ruangan' 
+import { listRuangan, updateRuangan, deleteRuangan, createRuangan, qrGenerateRuangan } from '~/lib/api/ruangan' 
 import { onMounted, ref, computed } from 'vue' 
 import Swal from 'sweetalert2'
+import { storage_URL } from '~/lib/api/barang' // Digunakan untuk prefix URL gambar
 
 definePageMeta({
   layout: 'dashboard'
@@ -14,6 +14,7 @@ definePageMeta({
 // State for data
 const ruangan = ref([])
 const isLoading = ref(true)
+const isGeneratingQR = ref(false); // State baru untuk loading QR
 
 // State untuk notifikasi (Toast sederhana)
 const notification = ref({ show: false, message: '', type: 'success' });
@@ -46,31 +47,25 @@ const selectedRuangan = ref({
 
 // Inisialisasi data untuk TAMBAH BARU
 const newRuangan = ref({
-    gedung: '',
-    nama_ruangan: '',
-    kode_ruangan: '',
+    gedung: '',
+    nama_ruangan: '',
+    kode_ruangan: '',
 })
 
 
 onMounted(async () => {
   try {
     const apiResponse = await listRuangan()
-    // PERBAIKAN: Jika API mengembalikan { data: [...] }, maka response.data adalah array.
-    // Jika API mengembalikan { message: "...", data: [...] } dan ini adalah body respons Axios, maka response.data adalah objek ini.
-    // DENGAN ASUMSI listRuangan mengembalikan body JSON Anda:
-    const roomsArray = apiResponse?.data || apiResponse; 
-    
-    // Periksa lebih dalam: jika roomsArray adalah objek dan memiliki properti 'data' (sesuai JSON Anda)
-    // Gunakan ternary operator untuk memilih array data yang benar
-    const actualData = Array.isArray(roomsArray) ? roomsArray : (roomsArray?.data || []);
+    // PERBAIKAN ROBUST: Mengambil data array ruangan dari response
+    const roomsArray = apiResponse?.data || apiResponse; 
+    const actualData = Array.isArray(roomsArray) ? roomsArray : (roomsArray?.data || []);
 
-    ruangan.value = actualData;
-    
+    ruangan.value = actualData;
+    
   } catch (error) {
     console.error('Failed to fetch ruangan list:', error)
     showNotification('Gagal memuat data ruangan.', 'error');
-    // Jika gagal, pastikan ruangan.value tetap array kosong
-    ruangan.value = [];
+    ruangan.value = [];
   } finally {
     isLoading.value = false
   }
@@ -127,11 +122,7 @@ function nextPage() {
 
 // --- MODAL CONTROL FUNCTIONS ---
 
-/**
- * Opens the Add modal.
- */
 function openAddModal() {
-    // Reset form data saat membuka modal
     newRuangan.value = {
         gedung: '',
         nama_ruangan: '',
@@ -140,25 +131,15 @@ function openAddModal() {
     isAddModalOpen.value = true;
 }
 
-/**
- * Closes the Add modal.
- */
 function closeAddModal() {
     isAddModalOpen.value = false;
 }
 
-
-/**
- * Opens the edit modal with the selected item's data.
- */
 function openEditModal(item) {
   selectedRuangan.value = { ...item }
   isEditModalOpen.value = true
 }
 
-/**
- * Closes the edit modal.
- */
 function closeEditModal() {
   isEditModalOpen.value = false
 }
@@ -167,14 +148,12 @@ function closeEditModal() {
 
 // Handler for regular form submission (Edit Modal)
 async function handleSave() {
-    // Buat objek data yang hanya berisi field yang bisa diubah
     const dataToUpdate = {
         gedung: selectedRuangan.value.gedung,
         nama_ruangan: selectedRuangan.value.nama_ruangan,
     };
 
     try{
-        // Kirim data update
         await updateRuangan(selectedRuangan.value.id, dataToUpdate);
 
         // Update local list
@@ -183,7 +162,6 @@ async function handleSave() {
             Object.assign(ruangan.value[index], selectedRuangan.value);
         }
 
-        // Notifikasi sukses
         Swal.fire({
           icon: 'success',
           title: 'Berhasil!',
@@ -202,25 +180,20 @@ async function handleSave() {
 
 // Handler for ADD NEW ITEM
 async function handleAddSubmit() {
-    // 1. Validasi form data
     if (!newRuangan.value.nama_ruangan || !newRuangan.value.kode_ruangan || !newRuangan.value.gedung) {
         showNotification('Semua field wajib diisi.', 'error');
         return;
     }
 
     try {
-        // Panggil API createRuangan
         const response = await createRuangan(newRuangan.value); 
         
         const newRuanganData = response.data;
 
-        // Update local list 
         if (newRuanganData) {
              ruangan.value.push(newRuanganData);
-             // Pindah ke halaman terakhir
              currentPage.value = totalPages.value; 
         } else {
-             // Jika respons API tidak mengembalikan data baru, refresh seluruh list
              const freshData = await listRuangan();
              ruangan.value = freshData.data;
         }
@@ -289,6 +262,45 @@ async function handleDelete(id, nama_ruangan) {
         });
     }
 }
+// --- FUNGSI GENERATE QR BARU ---
+// Fungsi ini generate QR dengan URL khusus: /booking/aktivasi/[id]
+async function handleGenerateQR(item) {
+  if (isGeneratingQR.value) return;
+
+  isGeneratingQR.value = true;
+
+  try {
+    // Buat urlName sesuai permintaan
+    const urlName = `/booking/aktivasi/${item.id}`;
+    // Kirim urlName ke API jika diperlukan
+    const response = await qrGenerateRuangan(item.id, urlName);
+    const qrPath = response?.QR_Image || null;
+
+    // Update QR_Image di list lokal
+    const index = ruangan.value.findIndex(r => r.id === item.id);
+    if (index !== -1 && qrPath) {
+      ruangan.value[index].QR_Image = qrPath;
+    }
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Berhasil!',
+      text: `QR Code untuk Ruangan ${item.kode_ruangan} berhasil dibuat/diperbarui!`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+  } catch (error) {
+    console.error('Gagal generate QR Code:', error);
+    Swal.fire({
+      title: 'Gagal Generate QR',
+      text: `Gagal membuat QR Code untuk ruangan ${item.kode_ruangan}. Silakan coba lagi.`,
+      icon: 'error'
+    });
+  } finally {
+    isGeneratingQR.value = false;
+  }
+}
 
 </script>
 
@@ -353,6 +365,7 @@ async function handleDelete(id, nama_ruangan) {
           <th class="text-center  px-5 py-3 w-56">Nama Ruangan</th>
           <th class="text-center  px-5 py-3 w-32">Kode Ruangan</th>
           <th class="text-center  px-5 py-3 w-32">Status Ruangan</th>
+          <th class="text-center  px-5 py-3 w-32">QR Code</th>
           <th class="text-center px-5 py-3 w-32">Aksi</th>
         </tr>
       </thead>
@@ -367,16 +380,45 @@ async function handleDelete(id, nama_ruangan) {
           </td>
           <td class="px-5 py-3 font-semibold align-middle">{{ data.nama_ruangan }}</td>
           <td class="px-5 py-3 font-mono text-gray-500 align-middle">{{ data.kode_ruangan }}</td>
-          <td class="px-5 py-3 font-mono text-gray-500 align-middle">{{ data.status }}</td>
+          <td class="px-5 py-3 font-mono align-middle">
+            <span :class="{
+                  'bg-green-100 text-green-800': data.status === 'Tersedia',
+                  'bg-red-100 text-red-800': data.status === 'Tidak Tersedia'
+                }"
+                  class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
+                {{ data.status || 'N/A' }} 
+            </span>
+          </td>
+          <td class="px-5 py-3 align-middle">
+            <div class="w-12 h-12 overflow-hidden border border-gray-300 flex-shrink-0 mx-auto flex items-center justify-center">
+              <img :src="data.QR_Image_url ? `${storage_URL}/uploads/${data.QR_Image_url}` : 'https://placehold.co/40x40/f1f1f1/333333?text=QR'"
+                   alt="QR Code Ruangan"
+                   class="w-full h-full object-cover"
+                   onerror="this.onerror=null;this.src='https://placehold.co/40x40/f1f1f1/333333?text=QR';" />
+            </div>
+          </td>
           <td class="px-5 py-3 text-center align-middle">
             <div class="flex justify-center items-center gap-2">
               
+              <!-- Tombol Generate QR -->
+              <button
+                @click="handleGenerateQR(data)"
+                :disabled="isGeneratingQR"
+                :class="{'opacity-60 cursor-not-allowed': isGeneratingQR}"
+                class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
+              >
+                <QrCode class="inline w-4 h-4" />
+              </button>
+
+              <!-- Tombol Edit -->
               <button
                 @click="openEditModal(data)"
                 class="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
               >
                 <Pencil class="inline w-4 h-4" />
               </button>
+              
+              <!-- Tombol Delete -->
               <button
                 @click="confirmDelete(data)"
                 class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
@@ -388,10 +430,10 @@ async function handleDelete(id, nama_ruangan) {
         </tr>
         
         <tr v-if="paginatedRuangan.length === 0 && filteredRuangan.length > 0">
-          <td colspan="5" class="text-center py-4 text-gray-500">Tidak ada ruangan di halaman ini.</td> 
+          <td colspan="7" class="text-center py-4 text-gray-500">Tidak ada ruangan di halaman ini.</td> <!-- Colspan diubah menjadi 7 -->
         </tr>
         <tr v-else-if="filteredRuangan.length === 0">
-          <td colspan="5" class="text-center py-4 text-gray-500">Tidak ada hasil yang cocok dengan pencarian Anda.</td> 
+          <td colspan="7" class="text-center py-4 text-gray-500">Tidak ada hasil yang cocok dengan pencarian Anda.</td> <!-- Colspan diubah menjadi 7 -->
         </tr>
       </tbody>
     </table>

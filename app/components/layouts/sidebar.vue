@@ -8,6 +8,7 @@
     Settings,
     BarChart3,
     Calendar,
+    User
   } from "lucide-vue-next";
 
   import { ref } from "vue";
@@ -35,6 +36,7 @@
       name: "List",
       icon: ClipboardList,
       submenus: [
+        { name: "Pengguna", icon: User, link: "/admin/list/pengguna" },
         { name: "Barang", icon: Package, link: "/admin/list/barang" },
         { name: "Ruangan", icon: Building2, link: "/admin/list/ruangan" },
       ],
@@ -67,7 +69,7 @@
               :class="
                 route.path.startsWith(menu.link)
                   ? 'bg-white text-primary'
-                  : 'text-white hover:bg-blue-600 hover:text-white'
+                  : 'text-white hover:bg-green-600 hover:text-white'
               "
             >
               <component :is="menu.icon" class="inline-block w-5 h-5 mr-3" />
@@ -83,7 +85,7 @@
                   :class="
                     route.path === child.link
                       ? 'bg-white text-primary'
-                      : 'text-white/80 hover:bg-blue-600 hover:text-white'
+                      : 'text-white/80 hover:bg-green-600 hover:text-white'
                   "
                 >
                   <component :is="child.icon" class="inline-block w-5 h-5 mr-3" />

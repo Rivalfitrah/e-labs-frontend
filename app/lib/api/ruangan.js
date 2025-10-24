@@ -50,7 +50,7 @@ export async function deleteRuangan(id) {
     } catch (error) {
         console.error('Error during delete ruangan:', error);
         throw error;
-    } finally{
+    } finally {
         // No operation needed here
     }
 }
@@ -77,14 +77,34 @@ export async function createRuangan(formData) {
 }
 
 export async function getDashboardRuangan() {
-    try{
+    try {
         const response = await axios.get(`${base_URL}/api/admin/master/ruangan/dashboard`, {
             withCredentials: true
         });
         console.log('Dashboard ruangan data:', response.data);
         return response.data;
-    }catch(error){
+    } catch (error) {
         console.error('Error fetching dashboard ruangan:', error)
         throw error
+    }
+}
+
+export async function qrGenerateRuangan(id, urlName) {
+    try {
+        const response = await axios.post(
+            `${base_URL}/api/admin/master/ruangan/generateQr/${id}`,
+            { urlName }, // send urlName in request body
+            {
+                withCredentials: true,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        console.log('QR Generate ruangan response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error generating QR for ruangan:', error);
+        throw error;
     }
 }
