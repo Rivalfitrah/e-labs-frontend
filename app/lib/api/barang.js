@@ -90,3 +90,16 @@ export async function getDashboardBarang() {
         throw error
     }
 }
+
+export async function getKategoriBarang() {
+    try {
+        const response = await axios.get(`${base_URL}/api/admin/master/barang/kategori`, {
+            withCredentials: true
+        });
+        console.log('Fetched kategori barang data:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching kategori barang:', error);
+        throw error;
+    }
+}

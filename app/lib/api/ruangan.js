@@ -108,3 +108,19 @@ export async function qrGenerateRuangan(id, urlName) {
         throw error;
     }
 }
+
+export async function deleteQR(id) {
+    try {
+        const response = await axios.delete(
+            `${base_URL}/api/admin/master/ruangan/QR/delete/${id}`,
+            {
+                withCredentials: true
+            }
+        );
+        console.log('Delete QR response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error during delete QR:', error);
+        throw error;
+    }
+}
