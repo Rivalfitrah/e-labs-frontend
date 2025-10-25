@@ -629,93 +629,101 @@ async function handleDeactivate(item) {
   <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
     <table class="w-full border-separate border-spacing-0">
       <thead>
-        <tr class="bg-primary text-white text-center text-sm uppercase tracking-wider">
-          <th class="text-center  px-5 py-3 w-12">No</th>
-          <th class="text-center  px-5 py-3 w-16">Foto</th>
-          <th class="text-left  px-5 py-3 w-40">Nama & Email</th>
-          <th class="text-center  px-5 py-3 w-32">ID/NIM/NIP</th>
-          <th class="text-center  px-5 py-3 w-20">Role</th>
-          <th class="text-center  px-5 py-3 w-24">Status</th>
-          <th class="text-center px-5 py-3 w-32">Aksi</th>
-        </tr>
+      <tr class="bg-primary text-white text-center text-sm uppercase tracking-wider">
+        <th class="text-center px-5 py-3 w-12">No</th>
+        <th class="text-center px-5 py-3 w-16">Foto</th>
+        <th class="text-left px-5 py-3 w-40">Nama & Email</th>
+        <th class="text-center px-5 py-3 w-32">ID/NIM/NIP</th>
+        <th class="text-center px-5 py-3 w-24">Role</th>
+        <th class="text-center px-5 py-3 w-24">Prodi</th>
+        <th class="text-center px-5 py-3 w-20">Semester</th>
+        <th class="text-center px-5 py-3 w-20">Total Peringatan</th>
+        <th class="text-center px-5 py-3 w-24">Status</th>
+        <th class="text-center px-5 py-3 w-32">Aksi</th>
+      </tr>
       </thead>
       <tbody class="text-gray-700 text-sm text-center">
-        
-        <tr v-for="(data, index) in paginatedUsers" :key="data.id" class="hover:bg-gray-50 transition border-t border-gray-100">
-          <td class="px-5 py-3 font-mono align-middle">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-          
-          <td class="px-5 py-3 align-middle">
-            <div class="w-10 h-10 rounded-full overflow-hidden border border-gray-300 flex-shrink-0 mx-auto">
-              <img :src="`${storage_URL}/uploads/${getProfileUrl(data.profilUrl)}`"
-                   alt="Foto Profil"
-                   class="w-full h-full object-cover"
-                   onerror="this.onerror=null;this.src='https://placehold.co/40x40/f1f1f1/333333?text=N/A';" />
-            </div>
-          </td>
-
-          <td class="px-5 py-3 text-left align-middle font-semibold">
-            <p>{{ data.nama }}</p>
-            <p class="text-xs text-gray-500 font-normal">{{ data.email }}</p>
-          </td>
-
-          <td class="px-5 py-3 font-mono text-gray-500 align-middle">
-            {{ data.NIM || data.NIP || data.uniqueId }}
-          </td>
-
-          <td class="px-5 py-3 align-middle">
-            <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
-                {{ data.role ? getRoleLabel(data.role.nama_role) : 'N/A' }}
-            </span>
-          </td>
-
-          <td class="px-5 py-3 align-middle">
-            <span :class="getStatusClass(data.isBlocked)"
-                  class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
-                {{ data.isBlocked ? 'BLOCKED' : 'AKTIF' }}
-            </span>
-          </td>
-
-          <td class="px-5 py-3 text-center align-middle">
-            <div class="flex justify-center items-center gap-2">
-              
-              <button
-                @click="openProfileModal(data)"
-                class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
-              >
-                <ImageIcon class="inline w-4 h-4" />
-              </button>
-              
-              <button
-                @click="data.isBlocked ? handleReactivate(data) : handleDeactivate(data)"
-                :class="data.isBlocked ? 'bg-green-600 hover:bg-green-700' : 'bg-red-800 hover:bg-red-900'"
-                class="text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
-              >
-                <Ban class="inline w-4 h-4" />
-              </button>
-              
-              <button
-                @click="openEditModal(data)"
-                class="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
-              >
-                <Pencil class="inline w-4 h-4" />
-              </button>
-              
-              <button
-                @click="confirmDelete(data)"
-                class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
-              >
-                <Trash2 class="inline w-4 h-4" />
-              </button>
-            </div>
-          </td>
-        </tr>
-        
-        <tr v-if="paginatedUsers.length === 0 && filteredUsers.length > 0">
-          <td colspan="7" class="text-center py-4 text-gray-500">Tidak ada pengguna di halaman ini.</td>
-        </tr>
-        <tr v-else-if="filteredUsers.length === 0">
-          <td colspan="7" class="text-center py-4 text-gray-500">Tidak ada hasil yang cocok dengan pencarian Anda.</td>
-        </tr>
+      <tr v-for="(data, index) in paginatedUsers" :key="data.id" class="hover:bg-gray-50 transition border-t border-gray-100">
+        <td class="px-5 py-3 font-mono align-middle">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+        <td class="px-5 py-3 align-middle">
+        <div class="w-10 h-10 rounded-full overflow-hidden border border-gray-300 flex-shrink-0 mx-auto">
+          <img :src="`${storage_URL}/uploads/${getProfileUrl(data.profilUrl || data.profil)}`"
+             alt="Foto Profil"
+             class="w-full h-full object-cover"
+             onerror="this.onerror=null;this.src='https://placehold.co/40x40/f1f1f1/333333?text=N/A';" />
+        </div>
+        </td>
+        <td class="px-5 py-3 text-left align-middle font-semibold">
+        <p>{{ data.nama }}</p>
+        <p class="text-xs text-gray-500 font-normal">{{ data.email }}</p>
+        </td>
+        <td class="px-5 py-3 font-mono text-gray-500 align-middle">
+        {{ data.NIM || data.NIP || data.uniqueId }}
+        </td>
+        <td class="px-5 py-3 align-middle">
+        <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
+          {{ data.role ? getRoleLabel(data.role.nama_role) : 'N/A' }}
+        </span>
+        </td>
+        <td class="px-5 py-3 align-middle">
+        <span v-if="data.prodi" class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
+          {{ data.prodi }}
+        </span>
+        <span v-else class="text-gray-400 text-xs">N/A</span>
+        </td>
+        <td class="px-5 py-3 align-middle">
+        <span v-if="data.semester" class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
+          {{ data.semester }}
+        </span>
+        <span v-else class="text-gray-400 text-xs">N/A</span>
+        </td>
+        <td class="px-5 py-3 align-middle">
+        <span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
+          {{ data.totalPeringatan ?? 0 }}
+        </span>
+        </td>
+        <td class="px-5 py-3 align-middle">
+        <span :class="getStatusClass(data.isBlocked)"
+            class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
+          {{ data.isBlocked ? 'BLOCKED' : 'AKTIF' }}
+        </span>
+        </td>
+        <td class="px-5 py-3 text-center align-middle">
+        <div class="flex justify-center items-center gap-2">
+          <button
+          @click="openProfileModal(data)"
+          class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
+          >
+          <ImageIcon class="inline w-4 h-4" />
+          </button>
+          <button
+          @click="data.isBlocked ? handleReactivate(data) : handleDeactivate(data)"
+          :class="data.isBlocked ? 'bg-green-600 hover:bg-green-700' : 'bg-red-800 hover:bg-red-900'"
+          class="text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
+          >
+          <Ban class="inline w-4 h-4" />
+          </button>
+          <button
+          @click="openEditModal(data)"
+          class="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
+          >
+          <Pencil class="inline w-4 h-4" />
+          </button>
+          <button
+          @click="confirmDelete(data)"
+          class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
+          >
+          <Trash2 class="inline w-4 h-4" />
+          </button>
+        </div>
+        </td>
+      </tr>
+      <tr v-if="paginatedUsers.length === 0 && filteredUsers.length > 0">
+        <td colspan="10" class="text-center py-4 text-gray-500">Tidak ada pengguna di halaman ini.</td>
+      </tr>
+      <tr v-else-if="filteredUsers.length === 0">
+        <td colspan="10" class="text-center py-4 text-gray-500">Tidak ada hasil yang cocok dengan pencarian Anda.</td>
+      </tr>
       </tbody>
     </table>
     
@@ -829,16 +837,16 @@ async function handleDeactivate(item) {
           <label for="modal_role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
           <select
             id="modal_role"
-            v-model.number="selectedUser.role"
+            v-model.number="selectedUser.role.id"
             class="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition bg-white"
             required
           >
             <option 
-                v-for="role in roleOptions" 
-                :key="role.value" 
-                :value="role.value"
+          v-for="role in roleOptions" 
+          :key="role.value" 
+          :value="role.value"
             >
-                {{ role.label }}
+          {{ role.label }}
             </option>
           </select>
         </div>
