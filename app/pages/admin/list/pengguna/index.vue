@@ -272,7 +272,7 @@ async function handleSave() {
     const dataToUpdate = {
         nama: selectedUser.value.nama,
         email: selectedUser.value.email,
-        roleId: selectedUser.value.roleId,
+        roleId: selectedUser.value.role,
         isBlocked: selectedUser.value.isBlocked,
     };
     
@@ -295,7 +295,7 @@ async function handleSave() {
             Object.assign(users.value[index], {
                 ...selectedUser.value,
                 // Pastikan role name diupdate juga
-                role: roleOptions.find(r => r.id === selectedUser.value.roleId)
+                role: roleOptions.find(r => r.id === selectedUser.value.role)
             });
         }
 
@@ -326,7 +326,7 @@ async function handleProfileUpload() {
     
     // Tambahkan field non-file (seperti roleId) agar backend tidak menganggap req.body kosong
     // Ini membantu melewati pengecekan 'isBodyEmpty' di backend saat file diupload.
-    formData.append('roleId', selectedUser.value.roleId); 
+    formData.append('roleId', selectedUser.value.role); 
 
     try {
         // PERBAIKAN: Menggunakan uniqueId sebagai ID untuk update
@@ -521,8 +521,61 @@ async function handleDeactivate(item) {
 
 
 <template>
-  
-  <UiInfoBox />
+    
+    <div class="mb-6">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <UiInfoBox type="mahasiswa" @click="search = ''; currentPage = 1" class="cursor-pointer hover:scale-105 transition-transform duration-200">
+          <template #title>
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0112 21.5a12.083 12.083 0 01-6.16-10.922L12 14z"/></svg>
+              Total Mahasiswa
+            </span>
+          </template>
+          <span class="text-2xl font-bold text-primary">{{ dashboardStats.mahasiswa }}</span>
+          <div class="text-xs text-gray-500 mt-1">Klik untuk reset filter</div>
+        </UiInfoBox>
+        <UiInfoBox type="dosen" @click="search = 'dosen'; currentPage = 1" class="cursor-pointer hover:scale-105 transition-transform duration-200">
+          <template #title>
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0z"/><path stroke-width="2" d="M12 14v7m0 0H7m5 0h5"/></svg>
+              Total Dosen
+            </span>
+          </template>
+          <span class="text-2xl font-bold text-blue-600">{{ dashboardStats.dosen }}</span>
+          <div class="text-xs text-gray-500 mt-1">Klik untuk filter dosen</div>
+        </UiInfoBox>
+        <UiInfoBox type="pengelola" @click="search = 'pengelola'; currentPage = 1" class="cursor-pointer hover:scale-105 transition-transform duration-200">
+          <template #title>
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 11c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4-4-1.79-4-4z"/><path stroke-width="2" d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+              Total Pengelola
+            </span>
+          </template>
+          <span class="text-2xl font-bold text-yellow-600">{{ dashboardStats.pengelola }}</span>
+          <div class="text-xs text-gray-500 mt-1">Klik untuk filter pengelola</div>
+        </UiInfoBox>
+        <UiInfoBox type="active" @click="search = ''; currentPage = 1" class="cursor-pointer hover:scale-105 transition-transform duration-200">
+          <template #title>
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              Pengguna Aktif
+            </span>
+          </template>
+          <span class="text-2xl font-bold text-green-600">{{ dashboardStats.aktif }}</span>
+          <div class="text-xs text-gray-500 mt-1">Klik untuk lihat semua aktif</div>
+        </UiInfoBox>
+        <UiInfoBox type="blocked" @click="search = 'blocked'; currentPage = 1" class="cursor-pointer hover:scale-105 transition-transform duration-200">
+          <template #title>
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728"/></svg>
+              Pengguna Terblokir
+            </span>
+          </template>
+          <span class="text-2xl font-bold text-red-600">{{ dashboardStats.blokir }}</span>
+          <div class="text-xs text-gray-500 mt-1">Klik untuk filter terblokir</div>
+        </UiInfoBox>
+      </div>
+    </div>
 
   <!-- Toast Notification -->
   <transition 
@@ -557,7 +610,7 @@ async function handleDeactivate(item) {
     <button
       @click="openAddModal"
       class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-green-700 transition w-full md:w-auto font-medium shadow-md">
-      Tambah Pengguna
+      Tambah
     </button>
   </div>
 

@@ -81,8 +81,8 @@ export async function dashboardUser() {
         const response = await axios.get(`${base_URL}/api/admin/users/dashboard/stats`, {
             withCredentials: true,
         })
-        console.log('Fetched dashboard user data:', response.data.data)
-        return response.data.data
+        console.log('Fetched dashboard user data:', response.data)
+        return response.data
     } catch (error) {
         console.error('Error fetching dashboard user data:', error)
         throw error
