@@ -4,7 +4,7 @@ import axios from 'axios'
 // filepath: d:\Fahri\codebase\projects ssmt5\backend-express\e-labs-frontend\app\lib\api.js
 const base_URL = useRuntimeConfig().public.NUXT_PUBLIC_API_URL || 'http://localhost:3001'
 export const storage_URL = useRuntimeConfig().public.NUXT_PUBLIC_STORAGE_URL || 'http://localhost:3001/storage'
-
+console.log('runtime config:', useRuntimeConfig())
 export async function Login(email, password) {
     try {
         const response = await axios.post(
