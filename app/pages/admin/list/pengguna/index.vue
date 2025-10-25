@@ -8,7 +8,8 @@ import {
   listUser, updateUser, deleteUser, createUser, dashboardUser, deactivatedUser,
   reactivateUser, getProdiList, giveWarning
 } from '~/lib/api/pengguna';
-import { storage_URL } from '~/lib/api/auth';
+import { storage_URL } from '~/lib/base.js'
+
 import UiInfoBox from '~/components/ui/infoBox.vue'; // <--- IMPOR UIINFOBOX
 
 definePageMeta({

@@ -2,8 +2,9 @@
 import UiInfoBox from '~/components/ui/infoBox.vue'
 import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Upload } from 'lucide-vue-next'
 // Perhatian: Saya menambahkan createBarang, asumsikan fungsi ini ada di api.js
-import { listBarang, storage_URL, updateBarang, deleteBarang, createBarang, getDashboardBarang, getKategoriBarang } from '~/lib/api/barang'
+import { listBarang,  updateBarang, deleteBarang, createBarang, getDashboardBarang, getKategoriBarang } from '~/lib/api/barang'
 import { onMounted, ref, computed } from 'vue'
+import { storage_URL } from '~/lib/base.js'
 import Swal from 'sweetalert2'
 
 definePageMeta({

@@ -5,7 +5,8 @@ import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, QrCode, ImageDown } 
 import { listRuangan, updateRuangan, deleteRuangan, createRuangan, qrGenerateRuangan, deleteQR } from '~/lib/api/ruangan'
 import { onMounted, ref, computed } from 'vue'
 import Swal from 'sweetalert2'
-import { storage_URL } from '~/lib/api/barang' // Digunakan untuk prefix URL gambar
+import { storage_URL } from '~/lib/base.js'
+
 
 definePageMeta({
   layout: 'dashboard'
