@@ -5,6 +5,7 @@ import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, 
 import { listUser, updateUser, deleteUser, createUser, dashboardUser, deactivatedUser, reactivateUser } from '~/lib/api/pengguna' 
 import { onMounted, ref, computed } from 'vue' 
 import Swal from 'sweetalert2'
+import { storage_URL } from '~/lib/api/auth'
 
 definePageMeta({
   layout: 'dashboard'
@@ -645,7 +646,7 @@ async function handleDeactivate(item) {
           
           <td class="px-5 py-3 align-middle">
             <div class="w-10 h-10 rounded-full overflow-hidden border border-gray-300 flex-shrink-0 mx-auto">
-              <img :src="getProfileUrl(data.profil)"
+              <img :src="`${storage_URL}/uploads/${getProfileUrl(data.profilUrl)}`"
                    alt="Foto Profil"
                    class="w-full h-full object-cover"
                    onerror="this.onerror=null;this.src='https://placehold.co/40x40/f1f1f1/333333?text=N/A';" />
