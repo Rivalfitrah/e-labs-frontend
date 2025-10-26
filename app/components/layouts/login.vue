@@ -20,7 +20,7 @@ const handleLogin = async () => {
             text: 'You have been logged in successfully!',
         })
         // localStorage.setItem('token', response.data.token)
-        // localStorage.setItem('user', JSON.stringify(response.data))
+        localStorage.setItem('user', JSON.stringify(response.data))
 
         // Redirect to dashboard or another page
         router.push('/admin/dashboard')
