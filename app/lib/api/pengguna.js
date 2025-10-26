@@ -123,3 +123,32 @@ export async function reactivateUser(id) {
         throw error;
     }
 }
+
+export async function getProdiList() {
+    try {
+        const response = await axios.get(`${base_URL}/api/admin/users/prodi`, {
+            withCredentials: true
+        });
+        console.log('Fetched prodi list:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching prodi list:', error);
+        throw error;
+    }
+}
+export async function giveWarning(uniqueId) {
+    try {
+        const response = await axios.post(
+            `${base_URL}/api/admin/users/${uniqueId}/warning`,
+            {}, // No body needed
+            {
+                withCredentials: true
+            }
+        );
+        console.log('Give warning response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error giving warning:', error);
+        throw error;
+    }
+}
