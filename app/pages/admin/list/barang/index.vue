@@ -1,5 +1,5 @@
 <script setup>
-import UiInfoBox from '~/components/ui/infoBox.vue'
+import UiPagination from '~/components/ui/pagination.vue'
 import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Upload } from 'lucide-vue-next'
 // Perhatian: Saya menambahkan createBarang, asumsikan fungsi ini ada di api.js
 import { listBarang,  updateBarang, deleteBarang, createBarang, getDashboardBarang, getKategoriBarang } from '~/lib/api/barang'
@@ -18,18 +18,6 @@ const isLoading = ref(true)
 // State for dashboard statistics (dummy initial value, replace with real fetch if needed)
 const dashboardStats = ref(null)
 
-onMounted(async () => {
-  try {
-    const data = await getDashboardBarang()
-    // Jika respons API kamu seperti contoh prompt, gunakan .data
-    dashboardStats.value = data.data
-    // ...existing code...
-  } catch (error) {
-    dashboardStats.value = null
-    // ...existing code...
-  }
-})
-
 
 // State untuk notifikasi (Toast sederhana)
 const notification = ref({ show: false, message: '', type: 'success' });
@@ -45,7 +33,7 @@ function showNotification(message, type = 'success') {
 
 // --- Pagination State ---
 const currentPage = ref(1)
-const itemsPerPage = ref(10) // Tentukan jumlah item per halaman, sudah diatur ke 10
+const itemsPerPage = ref(5) // Tentukan jumlah item per halaman
 const search = ref('') // State untuk fitur pencarian
 
 // State for Modals
@@ -497,43 +485,15 @@ const newImagePreviewUrl = computed(() => {
       {{ notification.message }}
     </div>
   </transition>
-  <div class="mb-6">
-
-
-    <div v-if="dashboardStats" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-
-      <UiInfoBox type="total">
-        <template #title>Total Barang</template>
-        {{ dashboardStats?.overview?.total ?? 0 }}
-      </UiInfoBox>
-      <UiInfoBox type="tersedia">
-        <template #title>Tersedia</template>
-        {{ dashboardStats?.overview?.tersedia ?? 0 }}
-      </UiInfoBox>
-      <UiInfoBox type="dipinjam">
-        <template #title>Dipinjam</template>
-        {{ dashboardStats?.overview?.dipinjam ?? 0 }}
-      </UiInfoBox>
-      <UiInfoBox type="rusak">
-        <template #title>Rusak</template>
-        {{ dashboardStats?.overview?.rusak ?? 0 }}
-      </UiInfoBox>
-      <UiInfoBox type="tidak-tersedia">
-        <template #title>Tidak Tersedia</template>
-        {{ dashboardStats?.overview?.tidak_tersedia ?? 0 }}
-      </UiInfoBox>
-
-    </div>
-  </div>
-  <div class="flex flex-col md:flex-row md:items-center gap-2 mb-4">
-    <div class="flex relative w-full">
+  <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+    <div class="flex relative flex-1">
       <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
       <input type="text" v-model="search"
         class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
         placeholder="Cari Nama Barang, Kode, atau Merek..." />
     </div>
     <button @click="openAddModal"
-      class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition w-full md:w-auto font-medium shadow-md">
+      class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition w-full sm:w-auto font-medium shadow-md whitespace-nowrap">
       Tambah
     </button>
   </div>
@@ -551,141 +511,122 @@ const newImagePreviewUrl = computed(() => {
 
 
   <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
+    <!-- Wrapper untuk tabel dengan overflow horizontal -->
+    <div class="overflow-x-auto">
+      <table class="w-full table-auto border-separate border-spacing-0 min-w-max">
+        <thead>
+          <tr class="bg-primary text-white text-center text-xs uppercase tracking-wider">
+            <th class="text-center px-2 py-3 min-w-[50px]">No</th>
+            <th class="text-center px-2 py-3 min-w-[60px]">Foto</th>
+            <th class="text-center px-3 py-3 min-w-[120px]">Nama Barang</th>
+            <th class="text-center px-2 py-3 min-w-[80px]">Kode</th>
+            <th class="text-center px-2 py-3 min-w-[100px]">Kategori</th>
+            <th class="text-center px-2 py-3 min-w-[80px]">Merk</th>
+            <th class="text-center px-2 py-3 min-w-[80px]">Kondisi</th>
+            <th class="text-center px-2 py-3 min-w-[80px]">Status</th>
+            <th class="text-center px-2 py-3 min-w-[60px]">Jumlah</th>
+            <th class="text-center px-2 py-3 min-w-[120px]">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="text-gray-700 text-xs text-center">
+          <tr v-for="(data, index) in paginatedBarang" :key="data.kode_barang"
+            class="hover:bg-gray-50 transition border-t border-gray-100">
+            <td class="px-2 py-3 font-mono align-middle">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+            <td class="px-2 py-3 align-middle">
+              <div
+                class="w-8 h-8 rounded-full overflow-hidden border border-gray-300 flex-shrink-0 mx-auto flex items-center justify-center">
+                <img
+                  :src="data.foto_barang_url ? `${storage_URL}/${data.foto_barang_url}` : 'https://placehold.co/32x32/f1f1f1/333333?text=N/A'"
+                  alt="Foto Barang" class="w-full h-full object-cover"
+                  onerror="this.onerror=null;this.src='https://placehold.co/32x32/f1f1f1/333333?text=N/A';" />
+              </div>
+            </td>
+            <td class="px-3 py-3 font-semibold align-middle">
+              <div class="max-w-[120px] truncate" :title="data.nama_barang">{{ data.nama_barang }}</div>
+            </td>
+            <td class="px-2 py-3 font-mono text-gray-500 align-middle">
+              <div class="max-w-[80px] truncate" :title="data.kode_barang">{{ data.kode_barang }}</div>
+            </td>
+            <td class="px-2 py-3 font-mono text-gray-500 align-middle">
+              <div class="max-w-[100px] truncate" :title="data.kategori.nama_kategori">{{ data.kategori.nama_kategori }}</div>
+            </td>
+            <td class="px-2 py-3 align-middle">
+              <div class="max-w-[80px] truncate" :title="data.merek">{{ data.merek }}</div>
+            </td>
+            <td class="px-2 py-3 align-middle">
+              <span :class="{
+                'bg-green-100 text-green-800': data.kondisi.toLowerCase() === 'baik',
+                'bg-yellow-100 text-yellow-800': data.kondisi.toLowerCase() === 'rusak ringan',
+                'bg-red-100 text-red-800': data.kondisi.toLowerCase() === 'rusak berat'
+              }" class="px-1 py-0.5 rounded-full text-xs font-medium">
+                {{ data.kondisi }}
+              </span>
+            </td>
+            <td class="px-2 py-3 font-mono align-middle">
+              <div class="max-w-[80px] truncate" :title="data.status">{{ data.status }}</div>
+            </td>
 
-    <table class="w-full border-separate border-spacing-0">
-      <thead>
-        <tr class="bg-primary text-white text-center text-sm uppercase tracking-wider">
-          <th class="text-center  px-5 py-3 w-12">No</th>
-          <th class="text-center  px-5 py-3 w-32">Foto</th>
-          <th class="text-center  px-5 py-3 w-40">Nama Barang</th>
-          <th class="text-center  px-5 py-3 w-32">Kode</th>
-          <th class="text-center  px-5 py-3 w-32">Kategori Barang</th>
-          <th class="text-center  px-5 py-3 w-40">Merk</th>
-          <th class="text-center  px-5 py-3 w-32">Kondisi</th>
-          <th class="text-center  px-5 py-3 w-20">Status</th>
-          <th class="text-center  px-5 py-3 w-20">Jumlah</th>
-          <th class="text-center px-5 py-3 w-32">Aksi</th>
-        </tr>
-      </thead>
-      <tbody class="text-gray-700 text-sm text-center">
+            <td class="px-2 py-3 font-mono align-middle">{{ data.jumlah }}</td>
+            <td class="px-2 py-3 text-center align-middle">
+              <div class="flex justify-center items-center gap-1">
 
-        <tr v-for="(data, index) in paginatedBarang" :key="data.kode_barang"
-          class="hover:bg-gray-50 transition border-t border-gray-100">
-          <td class="px-5 py-3 font-mono align-middle">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-          <td class="px-5 py-3 align-middle">
-            <div
-              class="w-10 h-10 rounded-full overflow-hidden border border-gray-300 flex-shrink-0 mx-auto flex items-center justify-center">
-              <img
-                :src="data.foto_barang_url ? `${storage_URL}/${data.foto_barang_url}` : 'https://placehold.co/40x40/f1f1f1/333333?text=N/A'"
-                alt="Foto Barang" class="w-full h-full object-cover"
-                onerror="this.onerror=null;this.src='https://placehold.co/40x40/f1f1f1/333333?text=N/A';" />
-            </div>
-          </td>
-          <td class="px-5 py-3 font-semibold align-middle">{{ data.nama_barang }}</td>
-          <td class="px-5 py-3 font-mono text-gray-500 align-middle">{{ data.kode_barang }}</td>
-          <td class="px-5 py-3 font-mono text-gray-500 align-middle">{{ data.kategori.nama_kategori }}</td>
-          <td class="px-5 py-3 align-middle">{{ data.merek }}</td>
-          <td class="px-5 py-3 align-middle">
-            <span :class="{
-              'bg-green-100 text-green-800': data.kondisi.toLowerCase() === 'baik',
-              'bg-yellow-100 text-yellow-800': data.kondisi.toLowerCase() === 'rusak ringan',
-              'bg-red-100 text-red-800': data.kondisi.toLowerCase() === 'rusak berat'
-            }" class="px-2 py-0.5 rounded-full text-xs font-medium">
-              {{ data.kondisi }}
-            </span>
-          </td>
-          <td class="px-5 py-3 font-mono align-middle">{{ data.status }}</td>
+                <button @click="openImageModal(data)"
+                  class="bg-blue-500 hover:bg-blue-600 text-white p-1.5 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
+                  <ImageIcon class="inline w-3 h-3" />
+                </button>
 
-          <td class="px-5 py-3 font-mono align-middle">{{ data.jumlah }}</td>
-          <td class="px-5 py-3 text-center align-middle">
-            <div class="flex justify-center items-center gap-2">
+                <button @click="openEditModal(data)"
+                  class="bg-yellow-500 hover:bg-yellow-600 text-white p-1.5 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
+                  <Pencil class="inline w-3 h-3" />
+                </button>
+                <button @click="confirmDelete(data)"
+                  class="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
+                  <Trash2 class="inline w-3 h-3" />
+                </button>
+              </div>
+            </td>
+          </tr>
 
-              <button @click="openImageModal(data)"
-                class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
-                <ImageIcon class="inline w-4 h-4" />
-              </button>
+          <tr v-if="paginatedBarang.length === 0 && filteredBarang.length > 0">
+            <td colspan="10" class="text-center py-4 text-gray-500">Tidak ada barang di halaman ini.</td>
+          </tr>
+          <tr v-else-if="filteredBarang.length === 0">
+            <td colspan="10" class="text-center py-4 text-gray-500">Tidak ada hasil yang cocok dengan pencarian Anda.</td>
+          </tr>
+        </tbody>
+      </table>
 
-              <button @click="openEditModal(data)"
-                class="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
-                <Pencil class="inline w-4 h-4" />
-              </button>
-              <button @click="confirmDelete(data)"
-                class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
-                <Trash2 class="inline w-4 h-4" />
-              </button>
-            </div>
-          </td>
-        </tr>
-
-        <tr v-if="paginatedBarang.length === 0 && filteredBarang.length > 0">
-          <td colspan="8" class="text-center py-4 text-gray-500">Tidak ada barang di halaman ini.</td>
-        </tr>
-        <tr v-else-if="filteredBarang.length === 0">
-          <td colspan="8" class="text-center py-4 text-gray-500">Tidak ada hasil yang cocok dengan pencarian Anda.</td>
-        </tr>
-      </tbody>
-    </table>
-
-
-    <div v-if="totalPages > 1" class="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
-
-
-      <span class="text-sm text-gray-700">
-        Menampilkan
-        <span class="font-semibold">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
-        sampai
-        <span class="font-semibold">{{ Math.min(currentPage * itemsPerPage, filteredBarang.length) }}</span>
-        dari
-        <span class="font-semibold">{{ filteredBarang.length }}</span>
-        barang
-      </span>
-
-
-      <nav class="flex items-center space-x-1" aria-label="Pagination">
-
-
-        <button @click="prevPage" :disabled="currentPage === 1"
-          :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
-          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-          <ChevronLeft class="w-5 h-5" />
-        </button>
-
-
-        <div class="hidden sm:flex space-x-1">
-          <button v-for="page in totalPages" :key="page" @click="goToPage(page)" :class="{
-            'bg-primary text-white': page === currentPage,
-            'bg-white text-gray-700 hover:bg-gray-100': page !== currentPage
-          }" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition">
-            {{ page }}
-          </button>
-        </div>
-
-
-        <button @click="nextPage" :disabled="currentPage === totalPages"
-          :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
-          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-          <ChevronRight class="w-5 h-5" />
-        </button>
-      </nav>
     </div>
 
+    <!-- Pagination Component -->
+    <UiPagination 
+      v-if="totalPages > 1"
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total-items="filteredBarang.length"
+      :items-per-page="itemsPerPage"
+      item-label="barang"
+      @previous="prevPage"
+      @next="nextPage"
+      @go-to-page="goToPage"
+    />
   </div>
 
 
 
   <div v-if="isEditModalOpen"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 overflow-y-auto"
     @click.self="closeEditModal">
 
     <!-- Overlay -->
     <div class="absolute inset-0 bg-black opacity-50"></div>
 
     <!-- Modal Content -->
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 relative transition-all duration-300" @click.stop>
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-4 sm:p-6 relative transition-all duration-300 my-8" @click.stop>
 
       <!-- Header -->
       <div class="flex items-center justify-between mb-4 border-b pb-2">
-        <h2 class="text-xl md:text-2xl font-bold text-gray-800">
+        <h2 class="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
           Ubah Data Barang: <br> <span class="text-primary">{{ selectedBarang?.nama_barang }}</span>
         </h2>
         <button @click="closeEditModal" class="text-gray-400 hover:text-gray-700 transition">
@@ -698,7 +639,7 @@ const newImagePreviewUrl = computed(() => {
       <!-- Form -->
       <form v-if="selectedBarang" @submit.prevent="handleSave" class="space-y-4">
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <!-- Nama Barang -->
           <div>
             <label for="modal_nama_barang" class="block text-sm font-medium text-gray-700 mb-1">Nama Barang</label>
@@ -787,7 +728,7 @@ const newImagePreviewUrl = computed(() => {
             min="1" required />
         </div>
         <!-- Action Buttons -->
-        <div class="flex justify-end space-x-3 pt-4">
+        <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
           <button type="button" @click="closeEditModal"
             class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition font-medium shadow-sm">
             Batal
@@ -804,7 +745,7 @@ const newImagePreviewUrl = computed(() => {
   <!-- Image Upload Modal -->
 
   <div v-if="isImageModalOpen"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 overflow-y-auto"
     @click.self="closeImageModal">
     <!-- Overlay -->
 
@@ -813,10 +754,10 @@ const newImagePreviewUrl = computed(() => {
     <!-- Modal Content Container -->
 
     <div
-      class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 relative transform transition-all duration-300 scale-100 opacity-100"
+      class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-4 sm:p-6 relative transform transition-all duration-300 scale-100 opacity-100 my-8"
       @click.stop>
 
-      <h2 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2">
+      <h2 class="text-lg sm:text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2">
         Unggah Foto Barang: <br>
         <span class="text-primary">{{ selectedBarang?.nama_barang }}</span>
       </h2>
@@ -833,8 +774,8 @@ const newImagePreviewUrl = computed(() => {
         <!-- Drag and Drop Area -->
         <label for="file_input" @dragover.prevent="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop"
           @click="triggerNewFileInput"
-          class="flex flex-col items-center justify-center w-full p-6 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-300">
-          <Upload class="w-12 h-12 text-gray-400 mb-3" />
+          class="flex flex-col items-center justify-center w-full p-4 sm:p-6 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-300">
+          <Upload class="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mb-3" />
           <p class="mb-2 text-sm text-gray-500 text-center">
             <span class="font-semibold">Klik untuk memilih</span> atau seret dan lepas gambar di sini
           </p>
@@ -847,7 +788,7 @@ const newImagePreviewUrl = computed(() => {
         <div v-if="imageFile || selectedBarang.foto_barang_url" class="mt-4 flex flex-col items-center">
           <p class="text-sm font-medium text-gray-700 mb-2">Pratinjau Gambar:</p>
           <img :src="imagePreviewUrl" alt="Pratinjau Gambar"
-            class="max-w-xs max-h-48 object-contain border border-gray-200 rounded-lg shadow-sm" />
+            class="max-w-full max-h-48 object-contain border border-gray-200 rounded-lg shadow-sm" />
           <p v-if="imageFile" class="mt-2 text-sm text-gray-600">{{ imageFile.name }} ({{ (imageFile.size / 1024 /
             1024).toFixed(2) }} MB)</p>
           <p v-else class="mt-2 text-sm text-gray-600">Gambar yang sudah ada</p>
@@ -855,7 +796,7 @@ const newImagePreviewUrl = computed(() => {
 
         <!-- Action Buttons for Image Modal -->
 
-        <div class="flex justify-end space-x-3 pt-4">
+        <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
           <button type="button" @click="closeImageModal"
             class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition font-medium shadow-sm">
             Batal
@@ -871,17 +812,17 @@ const newImagePreviewUrl = computed(() => {
 
   <!-- Tambah Barang Modal BARU -->
   <div v-if="isAddModalOpen"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 overflow-y-auto"
     @click.self="closeAddModal">
     <!-- Overlay -->
     <div class="absolute inset-0 bg-black opacity-50"></div>
 
     <!-- Modal Content Container -->
     <div
-      class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 relative transform transition-all duration-300 scale-100 opacity-100"
+      class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-4 sm:p-6 relative transform transition-all duration-300 scale-100 opacity-100 my-8"
       @click.stop>
 
-      <h2 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2">
+      <h2 class="text-lg sm:text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2">
         Tambah Barang Baru
       </h2>
 
@@ -894,7 +835,7 @@ const newImagePreviewUrl = computed(() => {
 
       <!-- Form Tambah Barang -->
       <form @submit.prevent="handleAddSubmit" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <!-- Nama Barang -->
           <div>
             <label for="add_nama_barang" class="block text-sm font-medium text-gray-700 mb-1">Nama Barang</label>
@@ -984,7 +925,7 @@ const newImagePreviewUrl = computed(() => {
           <label for="new_file_input" @dragover.prevent="handleDragOver" @dragleave="handleDragLeave"
             @drop="handleNewDrop" @click="triggerNewFileInput"
             class="flex flex-col items-center justify-center w-full p-4 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-300">
-            <Upload class="w-8 h-8 text-gray-400 mb-1" />
+            <Upload class="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mb-1" />
             <p class="text-sm text-gray-500 text-center">Seret/Pilih Gambar</p>
           </label>
           <input id="new_file_input" type="file" class="hidden" @change="handleNewFileChange" accept="image/*"
@@ -994,13 +935,13 @@ const newImagePreviewUrl = computed(() => {
           <div v-if="newImageFile" class="mt-2 flex flex-col items-center">
             <p class="text-sm font-medium text-gray-700 mb-2">Pratinjau Gambar:</p>
             <img :src="newImagePreviewUrl" alt="Pratinjau Gambar Baru"
-              class="max-w-xs max-h-32 object-contain border border-gray-200 rounded-lg shadow-sm" />
+              class="max-w-full max-h-32 object-contain border border-gray-200 rounded-lg shadow-sm" />
             <p class="mt-1 text-sm text-gray-600">{{ newImageFile.name }}</p>
           </div>
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex justify-end space-x-3 pt-4">
+        <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
           <button type="button" @click="closeAddModal"
             class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition font-medium shadow-sm">
             Batal

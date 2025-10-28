@@ -7,11 +7,30 @@
 
 html, body {
     font-family: 'Geist', ui-sans-serif, system-ui, sans-serif !important;
+    overflow-x: hidden;
 }
 
 /* Override Tailwind's font-sans */
 .font-sans {
     font-family: 'Geist', ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Prevent horizontal scrolling globally */
+.overflow-x-hidden {
+    overflow-x: hidden;
+}
+
+/* Ensure table responsiveness */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Utility for truncating text */
+.truncate-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 @theme {

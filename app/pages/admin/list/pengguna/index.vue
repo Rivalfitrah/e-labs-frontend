@@ -10,7 +10,7 @@ import {
 } from '~/lib/api/pengguna';
 import { storage_URL } from '~/lib/base.js'
 
-import UiInfoBox from '~/components/ui/infoBox.vue'; // <--- IMPOR UIINFOBOX
+import UiPagination from '~/components/ui/pagination.vue'
 
 definePageMeta({
   layout: 'dashboard'
@@ -566,80 +566,6 @@ function handleDrop(event) {
 
 
 <template>
-  <div class="mb-6">
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      <UiInfoBox type="mahasiswa" @click="search = ''; currentPage = 1"
-        class="cursor-pointer hover:scale-105 transition-transform duration-200">
-        <template #title>
-          <span class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
-              <path stroke-width="2"
-                d="M12 14l6.16-3.422A12.083 12.083 0 0112 21.5a12.083 12.083 0 01-6.16-10.922L12 14z" />
-            </svg>
-            Total Mahasiswa
-          </span>
-        </template>
-        <span class="text-2xl font-bold text-primary">{{ dashboardStats.mahasiswa }}</span>
-        <div class="text-xs text-gray-500 mt-1">Klik untuk reset filter</div>
-      </UiInfoBox>
-      <UiInfoBox type="dosen" @click="search = 'dosen'; currentPage = 1"
-        class="cursor-pointer hover:scale-105 transition-transform duration-200">
-        <template #title>
-          <span class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              <path stroke-width="2" d="M12 14v7m0 0H7m5 0h5" />
-            </svg>
-            Total Dosen
-          </span>
-        </template>
-        <span class="text-2xl font-bold text-blue-600">{{ dashboardStats.dosen }}</span>
-        <div class="text-xs text-gray-500 mt-1">Klik untuk filter dosen</div>
-      </UiInfoBox>
-      <UiInfoBox type="pengelola" @click="search = 'pengelola'; currentPage = 1"
-        class="cursor-pointer hover:scale-105 transition-transform duration-200">
-        <template #title>
-          <span class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-width="2" d="M12 11c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4-4-1.79-4-4z" />
-              <path stroke-width="2" d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2" />
-            </svg>
-            Total Pengelola
-          </span>
-        </template>
-        <span class="text-2xl font-bold text-yellow-600">{{ dashboardStats.pengelola }}</span>
-        <div class="text-xs text-gray-500 mt-1">Klik untuk filter pengelola</div>
-      </UiInfoBox>
-      <UiInfoBox type="active" @click="search = 'AKTIF'; currentPage = 1"
-        class="cursor-pointer hover:scale-105 transition-transform duration-200">
-        <template #title>
-          <span class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            Pengguna Aktif
-          </span>
-        </template>
-        <span class="text-2xl font-bold text-green-600">{{ dashboardStats.aktif }}</span>
-        <div class="text-xs text-gray-500 mt-1">Klik untuk lihat semua aktif</div>
-      </UiInfoBox>
-      <UiInfoBox type="blocked" @click="search = 'BLOCKED'; currentPage = 1"
-        class="cursor-pointer hover:scale-105 transition-transform duration-200">
-        <template #title>
-          <span class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-width="2" d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728" />
-            </svg>
-            Pengguna Terblokir
-          </span>
-        </template>
-        <span class="text-2xl font-bold text-red-600">{{ dashboardStats.blokir }}</span>
-        <div class="text-xs text-gray-500 mt-1">Klik untuk filter terblokir</div>
-      </UiInfoBox>
-    </div>
-  </div>
-
   <!-- Toast Notification -->
   <transition enter-active-class="transition ease-out duration-300 transform"
     enter-from-class="opacity-0 translate-y-full" enter-to-class="opacity-100 translate-y-0"
@@ -679,156 +605,124 @@ function handleDrop(event) {
 
 
   <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
-    <table class="w-full border-separate border-spacing-0">
-      <thead>
-        <tr class="bg-primary text-white text-center text-sm uppercase tracking-wider">
-          <th class="text-center px-5 py-3 w-12">No</th>
-          <th class="text-center px-5 py-3 w-16">Foto</th>
-          <th class="text-left px-5 py-3 w-40">Nama & Email</th>
-          <th class="text-center px-5 py-3 w-32">ID/NIM/NIP</th>
-          <th class="text-center px-5 py-3 w-24">Role</th>
-          <th class="text-center px-5 py-3 w-24">Prodi</th>
-          <th class="text-center px-5 py-3 w-20">Semester</th>
-          <th class="text-center px-5 py-3 w-20">Total Peringatan</th>
-          <th class="text-center px-5 py-3 w-24">Status</th>
-          <th class="text-center px-5 py-3 w-32">Aksi</th>
-        </tr>
-      </thead>
-      <tbody class="text-gray-700 text-sm text-center">
-        <tr v-for="(data, index) in paginatedUsers" :key="data.id"
-          class="hover:bg-gray-50 transition border-t border-gray-100">
-          <td class="px-5 py-3 font-mono align-middle">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-          <td class="px-5 py-3 align-middle">
-            <div class="w-10 h-10 rounded-full overflow-hidden border border-gray-300 flex-shrink-0 mx-auto">
-              <img :src="getProfileUrl(`${storage_URL}/uploads/${data.profilUrl}`)" alt="Foto Profil" class="w-full h-full object-cover"
-                onerror="this.onerror=null;this.src='https://placehold.co/40x40/f1f1f1/333333?text=N/A';" />
-            </div>
-          </td>
-          <td class="px-5 py-3 text-left align-middle font-semibold">
-            <p>{{ data.nama }}</p>
-            <p class="text-xs text-gray-500 font-normal">{{ data.email }}</p>
-          </td>
-          <td class="px-5 py-3 font-mono text-gray-500 align-middle">
-            {{ data.NIM || data.NIP || data.uniqueId }}
-          </td>
-          <td class="px-5 py-3 align-middle">
-            <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
-              {{ data.role ? getRoleLabel(data.role.nama_role) : 'N/A' }}
-            </span>
-          </td>
-          <td class="px-5 py-3 align-middle">
-            <span v-if="data.prodiId"
-              class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
-              {{getProdiOptions.find(p => p.value === data.prodiId)?.label || 'N/A'}}
-            </span>
-            <span v-else class="text-gray-400 text-xs">N/A</span>
-          </td>
-          <td class="px-5 py-3 align-middle">
-            <span v-if="data.semester"
-              class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
-              {{ data.semester }}
-            </span>
-            <span v-else class="text-gray-400 text-xs">N/A</span>
-          </td>
-          <td class="px-5 py-3 align-middle">
-            <span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
-              {{ data.totalPeringatan ?? 0 }}
-            </span>
-          </td>
-          <td class="px-5 py-3 align-middle">
-            <span :class="getStatusClass(data.isBlocked)"
-              class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
-              {{ data.isBlocked ? 'BLOCKED' : 'AKTIF' }}
-            </span>
-          </td>
-          <td class="px-5 py-3 text-center align-middle">
-            <div class="flex justify-center items-center gap-2">
-              <button @click="openProfileModal(data)" title="Ubah Foto Profil"
-                class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
-                <ImageIcon class="inline w-4 h-4" />
-              </button>
-              <!-- LOGIKA BARU: Jika totalPeringatan >= 3, tombol default-nya Merah (Blokir). -->
-              <!-- Jika isBlocked, warna default Hijau (Aktifkan), jika tidak (aktif), cek totalPeringatan. -->
-              <button @click="handleToggleBlock(data)" :title="data.isBlocked ? 'Aktifkan Pengguna' : 'Blokir Pengguna'"
-                :class="{
-                  // Jika sudah terblokir, tombol selalu hijau (Aktifkan)
-                  'bg-green-600 hover:bg-green-700': data.isBlocked,
-                  // Jika aktif, warnai merah jika Peringatan >= 3, jika tidak, pakai warna default (merah gelap)
-                  'bg-red-500 hover:bg-red-600': !data.isBlocked && (data.totalPeringatan ?? 0) >= 3,
-                  'bg-red-800 hover:bg-red-900': !data.isBlocked && (data.totalPeringatan ?? 0) < 3,
-                }"
-                class="text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
-                <Ban class="inline w-4 h-4" />
-              </button>
-              <button @click="handleGiveWarning(data)"
-                class="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
-                title="Beri Peringatan">
-                <MailWarningIcon class="inline w-4 h-4" />
-
-              </button>
-              <button @click="openEditModal(data)" title="Ubah Pengguna"
-                class="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
-                <Pencil class="inline w-4 h-4" />
-              </button>
-              <button @click="confirmDelete(data)" title="Hapus Pengguna"
-                class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
-                <Trash2 class="inline w-4 h-4" />
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr v-if="paginatedUsers.length === 0 && filteredUsers.length > 0">
-          <td colspan="10" class="text-center py-4 text-gray-500">Tidak ada pengguna di halaman ini.</td>
-        </tr>
-        <tr v-else-if="filteredUsers.length === 0">
-          <td colspan="10" class="text-center py-4 text-gray-500">Tidak ada hasil yang cocok dengan pencarian Anda.</td>
-        </tr>
-      </tbody>
-    </table>
-
-
-    <div v-if="totalPages > 1" class="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
-
-
-      <span class="text-sm text-gray-700">
-        Menampilkan
-        <span class="font-semibold">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
-        sampai
-        <span class="font-semibold">{{ Math.min(currentPage * itemsPerPage, filteredUsers.length) }}</span>
-        dari
-        <span class="font-semibold">{{ filteredUsers.length }}</span>
-        pengguna
-      </span>
-
-
-      <nav class="flex items-center space-x-1" aria-label="Pagination">
-
-
-        <button @click="prevPage" :disabled="currentPage === 1"
-          :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
-          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-          <ChevronLeft class="w-5 h-5" />
-        </button>
-
-
-        <div class="hidden sm:flex space-x-1">
-          <button v-for="page in totalPages" :key="page" @click="goToPage(page)" :class="{
-            'bg-primary text-white': page === currentPage,
-            'bg-white text-gray-700 hover:bg-gray-100': page !== currentPage
-          }" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition">
-            {{ page }}
-          </button>
-        </div>
-
-
-        <button @click="nextPage" :disabled="currentPage === totalPages"
-          :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
-          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-          <ChevronRight class="w-5 h-5" />
-        </button>
-      </nav>
+    <!-- Wrapper untuk tabel dengan overflow horizontal -->
+    <div class="overflow-x-auto">
+      <table class="w-full table-fixed border-separate border-spacing-0 min-w-max">
+        <thead>
+          <tr class="bg-primary text-white text-center text-xs uppercase tracking-wider">
+            <th class="text-center px-3 py-3 w-16">No</th>
+            <th class="text-center px-3 py-3 w-20">Foto</th>
+            <th class="text-left px-3 py-3 w-48">Nama & Email</th>
+            <th class="text-center px-3 py-3 w-32">ID/NIM/NIP</th>
+            <th class="text-center px-3 py-3 w-24">Role</th>
+            <th class="text-center px-3 py-3 w-36">Prodi</th>
+            <th class="text-center px-3 py-3 w-20">Semester</th>
+            <th class="text-center px-3 py-3 w-24">Peringatan</th>
+            <th class="text-center px-3 py-3 w-24">Status</th>
+            <th class="text-center px-3 py-3 w-40">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="text-gray-700 text-xs text-center">
+          <tr v-for="(data, index) in paginatedUsers" :key="data.id"
+            class="hover:bg-gray-50 transition border-t border-gray-100">
+            <td class="px-3 py-3 font-mono align-middle">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+            <td class="px-3 py-3 align-middle">
+              <div class="w-8 h-8 rounded-full overflow-hidden border border-gray-300 flex-shrink-0 mx-auto">
+                <img :src="getProfileUrl(`${storage_URL}/uploads/${data.profilUrl}`)" alt="Foto Profil" class="w-full h-full object-cover"
+                  onerror="this.onerror=null;this.src='https://placehold.co/32x32/f1f1f1/333333?text=N/A';" />
+              </div>
+            </td>
+            <td class="px-3 py-3 text-left align-middle font-semibold">
+              <div class="w-full">
+                <p class="break-words text-xs font-semibold leading-tight">{{ data.nama }}</p>
+                <p class="break-words text-xs text-gray-500 font-normal leading-tight mt-1">{{ data.email }}</p>
+              </div>
+            </td>
+            <td class="px-3 py-3 font-mono text-gray-500 align-middle">
+              <div class="break-words text-xs">{{ data.NIM || data.NIP || data.uniqueId }}</div>
+            </td>
+            <td class="px-3 py-3 align-middle">
+              <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium break-words">
+                {{ data.role ? getRoleLabel(data.role.nama_role) : 'N/A' }}
+              </span>
+            </td>
+            <td class="px-3 py-3 align-middle">
+              <span v-if="data.prodiId"
+                class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full text-xs font-medium break-words">
+                {{getProdiOptions.find(p => p.value === data.prodiId)?.label || 'N/A'}}
+              </span>
+              <span v-else class="text-gray-400 text-xs">N/A</span>
+            </td>
+            <td class="px-3 py-3 align-middle">
+              <span v-if="data.semester"
+                class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                {{ data.semester }}
+              </span>
+              <span v-else class="text-gray-400 text-xs">N/A</span>
+            </td>
+            <td class="px-3 py-3 align-middle">
+              <span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                {{ data.totalPeringatan ?? 0 }}
+              </span>
+            </td>
+            <td class="px-3 py-3 align-middle">
+              <span :class="getStatusClass(data.isBlocked)"
+                class="px-2 py-0.5 rounded-full text-xs font-medium">
+                {{ data.isBlocked ? 'BLOCKED' : 'AKTIF' }}
+              </span>
+            </td>
+            <td class="px-3 py-3 text-center align-middle">
+              <div class="flex justify-center items-center gap-1 flex-wrap">
+                <button @click="openProfileModal(data)" title="Ubah Foto Profil"
+                  class="bg-blue-500 hover:bg-blue-600 text-white p-1.5 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
+                  <ImageIcon class="inline w-3 h-3" />
+                </button>
+                <button @click="handleToggleBlock(data)" :title="data.isBlocked ? 'Aktifkan Pengguna' : 'Blokir Pengguna'"
+                  :class="{
+                    'bg-green-600 hover:bg-green-700': data.isBlocked,
+                    'bg-red-500 hover:bg-red-600': !data.isBlocked && (data.totalPeringatan ?? 0) >= 3,
+                    'bg-red-800 hover:bg-red-900': !data.isBlocked && (data.totalPeringatan ?? 0) < 3,
+                  }"
+                  class="text-white p-1.5 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
+                  <Ban class="inline w-3 h-3" />
+                </button>
+                <button @click="handleGiveWarning(data)"
+                  class="bg-orange-500 hover:bg-orange-600 text-white p-1.5 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center"
+                  title="Beri Peringatan">
+                  <MailWarningIcon class="inline w-3 h-3" />
+                </button>
+                <button @click="openEditModal(data)" title="Ubah Pengguna"
+                  class="bg-yellow-500 hover:bg-yellow-600 text-white p-1.5 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
+                  <Pencil class="inline w-3 h-3" />
+                </button>
+                <button @click="confirmDelete(data)" title="Hapus Pengguna"
+                  class="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-105 flex items-center justify-center">
+                  <Trash2 class="inline w-3 h-3" />
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr v-if="paginatedUsers.length === 0 && filteredUsers.length > 0">
+            <td colspan="10" class="text-center py-4 text-gray-500">Tidak ada pengguna di halaman ini.</td>
+          </tr>
+          <tr v-else-if="filteredUsers.length === 0">
+            <td colspan="10" class="text-center py-4 text-gray-500">Tidak ada hasil yang cocok dengan pencarian Anda.</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
+    <!-- Pagination Component -->
+    <UiPagination 
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total-items="filteredUsers.length"
+      :items-per-page="itemsPerPage"
+      item-label="pengguna"
+      @previous="prevPage"
+      @next="nextPage"
+      @go-to-page="goToPage"
+    />
   </div>
 
 

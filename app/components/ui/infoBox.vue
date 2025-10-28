@@ -27,6 +27,14 @@ const colorMap = {
   dipinjam: { border: 'border-yellow-500', text: 'text-yellow-600' },
   rusak: { border: 'border-red-500', text: 'text-red-600' },
   'tidak-tersedia': { border: 'border-gray-500', text: 'text-gray-600' },
+  
+  // User types
+  mahasiswa: { border: 'border-primary', text: 'text-primary' },
+  dosen: { border: 'border-blue-500', text: 'text-blue-600' },
+  pengelola: { border: 'border-yellow-500', text: 'text-yellow-600' },
+  active: { border: 'border-green-500', text: 'text-green-600' },
+  blocked: { border: 'border-red-500', text: 'text-red-600' },
+  
   default: { border: 'border-gray-300', text: 'text-gray-700' },
 };
 
