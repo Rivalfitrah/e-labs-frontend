@@ -1,8 +1,8 @@
 
 import axios from 'axios'
+import { base_URL } from '../base'
 
 // filepath: d:\Fahri\codebase\projects ssmt5\backend-express\e-labs-frontend\app\lib\api.js
-const base_URL = useRuntimeConfig().public.NUXT_PUBLIC_API_URL || 'http://localhost:3001'
 export async function listRuangan() {
     try {
         const response = await axios.get(`${base_URL}/api/admin/master/ruangan`, {
@@ -122,5 +122,17 @@ export async function deleteQR(id) {
     } catch (error) {
         console.error('Error during delete QR:', error);
         throw error;
+    }
+}
+
+export async function getRuanganID(id) {
+    try {
+        const response = await axios.get(`${base_URL}/api/peminjaman/ruangan/${id}`)
+        console.log('Fetched ruangan by ID data:', response.data)
+        return response.data
+    }
+    catch (error) {
+        console.error('Error fetching ruangan by ID:', error)
+        throw error
     }
 }

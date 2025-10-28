@@ -1,9 +1,9 @@
 
 import axios from 'axios'
 
-axios.defaults.withCredentials = true; 
+// filepath: d:\Fahri\codebase\projects ssmt5\backend-express\e-labs-frontend\app\lib\api.js
+import { base_URL } from '../base'
 
-const base_URL = useRuntimeConfig().public.NUXT_PUBLIC_API_URL || 'http://localhost:3001'
 console.log('runtime config:', useRuntimeConfig())
 export async function Login(email, password) {
     try {
