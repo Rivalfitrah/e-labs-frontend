@@ -6,7 +6,8 @@
     ClipboardList,
     User,
     Settings,
-    MonitorDot
+    MonitorDot,
+    BookOpen
   } from "lucide-vue-next";
 
   import { ref, computed } from "vue";
@@ -44,6 +45,7 @@
         { name: "Pengguna", icon: User, link: "/admin/list/pengguna" },
         { name: "Barang", icon: Package, link: "/admin/list/barang" },
         { name: "Ruangan", icon: Building2, link: "/admin/list/ruangan" },
+        { name: "Mata Kuliah", icon: BookOpen, link: "/admin/list/matkul" },
       ],
     },
     {

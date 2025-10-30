@@ -100,7 +100,36 @@ function validateFile(file) {
 // --- PAGINATION & FILTERING ---
 const itemsPerPage = ref(10);
 const currentPage = ref(1);
+// PAGINATION SMART (Dinamis dengan elipsis)
+const paginationPages = computed(() => {
+  const pages = [];
+  const maxPagesToShow = 5;
+  const total = totalPages.value;
+  const current = currentPage.value;
 
+  if (total <= maxPagesToShow) {
+    for (let i = 1; i <= total; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (current > 3) pages.push('...');
+    let start = Math.max(2, current - 1);
+    let end = Math.min(total - 1, current + 1);
+
+    if (current <= 3) end = 4;
+    if (current >= total - 2) start = total - 3;
+
+    start = Math.max(start, 2);
+    end = Math.min(end, total - 1);
+
+    for (let i = start; i <= end; i++) {
+      if (i > 1 && i < total) pages.push(i);
+    }
+
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
+  }
+  return pages.filter((page, idx, arr) => page !== '...' || arr[idx - 1] !== '...');
+});
 const filteredUsers = computed(() => {
   const query = search.value.toLowerCase().trim();
   const dataArray = users.value;
@@ -700,7 +729,8 @@ function handleDrop(event) {
           <td class="px-5 py-3 font-mono align-middle">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
           <td class="px-5 py-3 align-middle">
             <div class="w-10 h-10 rounded-full overflow-hidden border border-gray-300 flex-shrink-0 mx-auto">
-              <img :src="getProfileUrl(`${storage_URL}/uploads/${data.profilUrl}`)" alt="Foto Profil" class="w-full h-full object-cover"
+              <img :src="getProfileUrl(`${storage_URL}/uploads/${data.profilUrl}`)" alt="Foto Profil"
+                class="w-full h-full object-cover"
                 onerror="this.onerror=null;this.src='https://placehold.co/40x40/f1f1f1/333333?text=N/A';" />
             </div>
           </td>
@@ -786,10 +816,8 @@ function handleDrop(event) {
       </tbody>
     </table>
 
-
+    <!-- Pagination Dinamis -->
     <div v-if="totalPages > 1" class="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
-
-
       <span class="text-sm text-gray-700">
         Menampilkan
         <span class="font-semibold">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
@@ -799,32 +827,38 @@ function handleDrop(event) {
         <span class="font-semibold">{{ filteredUsers.length }}</span>
         pengguna
       </span>
-
-
       <nav class="flex items-center space-x-1" aria-label="Pagination">
-
-
+        <button @click="goToPage(1)" :disabled="currentPage === 1"
+          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition"
+          :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }">
+          &laquo;
+        </button>
         <button @click="prevPage" :disabled="currentPage === 1"
-          :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
-          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
+          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition"
+          :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }">
           <ChevronLeft class="w-5 h-5" />
         </button>
-
-
-        <div class="hidden sm:flex space-x-1">
-          <button v-for="page in totalPages" :key="page" @click="goToPage(page)" :class="{
-            'bg-primary text-white': page === currentPage,
-            'bg-white text-gray-700 hover:bg-gray-100': page !== currentPage
-          }" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition">
-            {{ page }}
-          </button>
+        <div class="flex space-x-1">
+          <template v-for="(page, idx) in paginationPages" :key="idx">
+            <button v-if="page !== '...'" @click="goToPage(page)" :disabled="page === currentPage" :class="{
+              'bg-primary text-white': page === currentPage,
+              'bg-white text-gray-700 hover:bg-gray-100': page !== currentPage,
+              'opacity-50 cursor-not-allowed': page === currentPage
+            }" class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition">
+              {{ page }}
+            </button>
+            <span v-else class="px-3 py-2 text-gray-400 select-none text-sm">...</span>
+          </template>
         </div>
-
-
         <button @click="nextPage" :disabled="currentPage === totalPages"
-          :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
-          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
+          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition"
+          :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }">
           <ChevronRight class="w-5 h-5" />
+        </button>
+        <button @click="goToPage(totalPages)" :disabled="currentPage === totalPages"
+          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition"
+          :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }">
+          &raquo;
         </button>
       </nav>
     </div>
