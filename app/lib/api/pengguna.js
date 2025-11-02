@@ -153,3 +153,72 @@ export async function giveWarning(uniqueId) {
         throw error;
     }
 }
+
+export async function getMatakuliahList() {
+    try {
+        const response = await axios.get(`${base_URL}/api/admin/matkul/list`, {
+            withCredentials: true
+        });
+        console.log('Fetched matakuliah list:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching matakuliah list:', error);
+        throw error;
+    }
+}
+
+export async function addMatakuliah() {
+    try {
+        const response = await axios.post(`${base_URL}/api/admin/matkul`, {
+            withCredentials: true
+        });
+        console.log('Add matakuliah response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error adding matakuliah:', error);
+        throw error;
+    }
+}
+
+export async function deleteMatakuliah(id) {
+    try {
+        const response = await axios.delete(`${base_URL}/api/admin/matkul/${id}`, {
+            withCredentials: true
+        });
+        console.log('Delete matakuliah response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting matakuliah:', error);
+        throw error;
+    }
+}
+
+export async function updateMatakuliah(id, formData) {
+    try {
+        const response = await axios.patch(
+            `${base_URL}/api/admin/matkul/${id}`,
+            formData,
+            {
+                withCredentials: true
+            }
+        );
+        console.log('Update matakuliah response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating matakuliah:', error);
+        throw error;
+    }
+}
+
+export async function getDetailMatkul(id) {
+    try {
+        const response = await axios.get(`${base_URL}/api/admin/matkul/${id}`, {
+            withCredentials: true
+        });
+        console.log('Fetched matakuliah detail:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching matakuliah detail:', error);
+        throw error;
+    }
+}

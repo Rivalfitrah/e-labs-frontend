@@ -500,18 +500,48 @@ async function handleDeleteQR(item) {
       </tbody>
     </table>
 
-    <!-- Pagination Component -->
-    <UiPagination 
-      v-if="totalPages > 1"
-      :current-page="currentPage"
-      :total-pages="totalPages"
-      :total-items="filteredRuangan.length"
-      :items-per-page="itemsPerPage"
-      item-label="ruangan"
-      @previous="prevPage"
-      @next="nextPage"
-      @go-to-page="goToPage"
-    />
+    <!-- Pagination Dinamis -->
+    <div v-if="totalPages > 1" class="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
+      <span class="text-sm text-gray-700">
+        Menampilkan
+        <span class="font-semibold">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
+        sampai
+        <span class="font-semibold">{{ Math.min(currentPage * itemsPerPage, filteredRuangan.length) }}</span>
+        dari
+        <span class="font-semibold">{{ filteredRuangan.length }}</span>
+        ruangan
+      </span>
+      <nav class="flex items-center space-x-1" aria-label="Pagination">
+        <button @click="goToPage(1)" :disabled="currentPage === 1"
+          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
+          &laquo;
+        </button>
+        <button @click="prevPage" :disabled="currentPage === 1"
+          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
+          <ChevronLeft class="w-5 h-5" />
+        </button>
+        <div class="flex space-x-1">
+          <template v-for="(page, idx) in paginationPages" :key="idx">
+            <button v-if="page !== '...'" @click="goToPage(page)" :class="{
+              'bg-primary text-white': page === currentPage,
+              'bg-white text-gray-700 hover:bg-gray-100': page !== currentPage
+            }" class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition">
+              {{ page }}
+            </button>
+            <span v-else class="px-3 py-2 text-gray-400 select-none text-sm">...</span>
+          </template>
+        </div>
+        <button @click="nextPage" :disabled="currentPage === totalPages"
+          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
+          <ChevronRight class="w-5 h-5" />
+        </button>
+        <button @click="goToPage(totalPages)" :disabled="currentPage === totalPages"
+          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
+          &raquo;
+        </button>
+      </nav>
+    </div>
+
   </div>
 
 

@@ -100,7 +100,36 @@ function validateFile(file) {
 // --- PAGINATION & FILTERING ---
 const itemsPerPage = ref(10);
 const currentPage = ref(1);
+// PAGINATION SMART (Dinamis dengan elipsis)
+const paginationPages = computed(() => {
+  const pages = [];
+  const maxPagesToShow = 5;
+  const total = totalPages.value;
+  const current = currentPage.value;
 
+  if (total <= maxPagesToShow) {
+    for (let i = 1; i <= total; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (current > 3) pages.push('...');
+    let start = Math.max(2, current - 1);
+    let end = Math.min(total - 1, current + 1);
+
+    if (current <= 3) end = 4;
+    if (current >= total - 2) start = total - 3;
+
+    start = Math.max(start, 2);
+    end = Math.min(end, total - 1);
+
+    for (let i = start; i <= end; i++) {
+      if (i > 1 && i < total) pages.push(i);
+    }
+
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
+  }
+  return pages.filter((page, idx, arr) => page !== '...' || arr[idx - 1] !== '...');
+});
 const filteredUsers = computed(() => {
   const query = search.value.toLowerCase().trim();
   const dataArray = users.value;
