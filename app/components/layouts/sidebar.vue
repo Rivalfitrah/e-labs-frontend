@@ -1,93 +1,93 @@
 <script setup>
-  import {
-    LayoutDashboard,
-    Package,
-    Building2,
-    ClipboardList,
-    User,
-    Settings,
-    MonitorDot,
-    BookOpen,
-    Menu
-  } from "lucide-vue-next";
+import {
+  LayoutDashboard,
+  Package,
+  Building2,
+  ClipboardList,
+  User,
+  Settings,
+  MonitorDot,
+  BookOpen,
+  Menu
+} from "lucide-vue-next";
 
-  import { ref, computed } from "vue";
-  import { useRoute } from "vue-router";
-  // Ganti dengan path file yang sesuai
-  import { getUserRole } from "../middleware/middleware"; // ASUMSI PATH INI
+import { ref, computed } from "vue";
+import { useRoute } from "vue-router";
+// Ganti dengan path file yang sesuai
+import { getUserRole } from "../middleware/middleware"; // ASUMSI PATH INI
 
-  const route = useRoute();
+const route = useRoute();
 
-  const isPeminjamanOpen = ref(false);
-  const userRole = ref(null); // Mulai dengan null atau loading state
+const isPeminjamanOpen = ref(false);
+const userRole = ref(null); // Mulai dengan null atau loading state
 
-  // Panggil fungsi asinkron untuk mendapatkan peran saat setup
-  getUserRole().then(role => {
-    userRole.value = role;
-    console.log("Peran Pengguna yang didapatkan:", userRole.value);
-  });
+// Panggil fungsi asinkron untuk mendapatkan peran saat setup
+getUserRole().then(role => {
+  userRole.value = role;
+  console.log("Peran Pengguna yang didapatkan:", userRole.value);
+});
 
-  const baseMenus = [
-    { name: "Dashboard", icon: LayoutDashboard, link: "/admin/dashboard" },
-    {
-      name: "Peminjaman",
-      icon: ClipboardList,
-      link: null, // Set null jika hanya parent
-      submenus: [
-        { name: "Barang", icon: Package, link: "/admin/peminjaman/barang" },
-        { name: "Ruangan", icon: Building2, link: "/admin/peminjaman/ruangan" },
-      ],
-    },
-    {
-      name: "List",
-      icon: ClipboardList,
-      link: null, // Set null jika hanya parent
-      submenus: [
-        { name: "Pengguna", icon: User, link: "/admin/list/pengguna" },
-        { name: "Barang", icon: Package, link: "/admin/list/barang" },
-        { name: "Ruangan", icon: Building2, link: "/admin/list/ruangan" },
-        { name: "Mata Kuliah", icon: BookOpen, link: "/admin/list/matkul" },
-      ],
-    },
-    {
-      name: "Log Aktivitas",
-      icon: MonitorDot,
-      link: "/admin/log", // Set null jika hanya parent
+const baseMenus = [
+  { name: "Dashboard", icon: LayoutDashboard, link: "/admin/dashboard" },
+  {
+    name: "Peminjaman",
+    icon: ClipboardList,
+    link: null, // Set null jika hanya parent
+    submenus: [
+      { name: "Barang", icon: Package, link: "/admin/peminjaman/barang" },
+      { name: "Ruangan", icon: Building2, link: "/admin/peminjaman/ruangan" },
+    ],
+  },
+  {
+    name: "List",
+    icon: ClipboardList,
+    link: null, // Set null jika hanya parent
+    submenus: [
+      { name: "Pengguna", icon: User, link: "/admin/list/pengguna" },
+      { name: "Barang", icon: Package, link: "/admin/list/barang" },
+      { name: "Ruangan", icon: Building2, link: "/admin/list/ruangan" },
+      { name: "Mata Kuliah", icon: BookOpen, link: "/admin/list/matkul" },
+    ],
+  },
+  {
+    name: "Log Aktivitas",
+    icon: MonitorDot,
+    link: "/admin/log", // Set null jika hanya parent
 
-    },
-  ];
+  },
+];
 
-  // Computed property untuk menu yang telah difilter
-  const menus = computed(() => {
-    // Tunggu hingga userRole.value memiliki nilai
-    if (!userRole.value) {
-      return []; // Tampilkan menu kosong saat loading
-    }
+// Computed property untuk menu yang telah difilter
+const menus = computed(() => {
+  // Tunggu hingga userRole.value memiliki nilai
+  if (!userRole.value) {
+    return []; // Tampilkan menu kosong saat loading
+  }
 
-    // Peran yang tidak diizinkan melihat submenu Pengguna
-    const restrictedRoles = ["mahasiswa", "dosen"];
+  // Peran yang tidak diizinkan melihat submenu Pengguna
+  const restrictedRoles = ["mahasiswa", "dosen"];
 
-    // Jika peran pengguna termasuk dalam restrictedRoles, lakukan filtering
-    if (restrictedRoles.includes(userRole.value)) {
-      return baseMenus.map(menu => {
-        // Cek jika menu adalah 'List' dan memiliki submenus
-        if (menu.name === 'List' && menu.submenus) {
-          // Filter submenus: hilangkan yang namanya 'Pengguna'
-          const filteredSubmenus = menu.submenus.filter(
-            submenu => submenu.name !== 'Pengguna'
-          );
+  // Jika peran pengguna termasuk dalam restrictedRoles, lakukan filtering
+  if (restrictedRoles.includes(userRole.value)) {
+    return baseMenus.map(menu => {
+      // Cek jika menu adalah 'List' dan memiliki submenus
+      if (menu.name === 'List' && menu.submenus) {
+        // Filter submenus: hilangkan yang namanya 'Pengguna'
+        const filteredSubmenus = menu.submenus.filter(
+          submenu => submenu.name !== 'Pengguna'
+        );
 
-          // Kembalikan menu List dengan submenu yang sudah difilter
-          return { ...menu, submenus: filteredSubmenus };
-        }
-        // Kembalikan menu lainnya apa adanya
-        return menu;
-      });
-    }
+        // Kembalikan menu List dengan submenu yang sudah difilter
+        return { ...menu, submenus: filteredSubmenus };
+      }
+      // Kembalikan menu lainnya apa adanya
+      return menu;
+    });
+  }
 
-    // Jika peran tidak dibatasi (e.g., admin), kembalikan baseMenus lengkap
-    return baseMenus;
-  });
+  // Jika peran tidak dibatasi (e.g., admin), kembalikan baseMenus lengkap
+  return baseMenus;
+});
 </script>
 
 <template>
@@ -128,20 +128,28 @@
               {{ menu.name }}
             </div>
 
-
-            <ul v-if="menu.submenus && menu.submenus.length > 0" class="ml-6 mt-1 space-y-1">
+            <!-- SUBMENU DENGAN LINGKARAN HOLLOW -->
+            <ul v-if="menu.submenus && menu.submenus.length > 0" class="ml-6 mt-1 space-y-2">
               <li v-for="child in menu.submenus" :key="child.link">
                 <NuxtLink
                   :to="child.link"
-                  class="block px-3 py-1 text-sm rounded-lg transition"
+                  class="flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg transition-all group"
                   :class="
                     route.path === child.link
                       ? 'bg-white text-primary'
                       : 'text-white/80 hover:bg-green-600 hover:text-white'
                   "
                 >
-                  <component :is="child.icon" class="inline-block w-5 h-5 mr-3" />
-                  {{ child.name }}
+                  <!-- LINGKARAN DENGAN BORDER (HOLLOW) LEBIH BESAR -->
+                  <span
+                    class="w-4 h-4 rounded-full border-2 transition-all flex-shrink-0"
+                    :class="
+                      route.path === child.link
+                        ? 'bg-white border-primary'
+                        : 'border-white'
+                    "
+                  ></span>
+                  <span>{{ child.name }}</span>
                 </NuxtLink>
               </li>
             </ul>
