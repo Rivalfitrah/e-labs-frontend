@@ -6,7 +6,8 @@
     ClipboardList,
     User,
     Settings,
-    MonitorDot
+    MonitorDot,
+    Menu
   } from "lucide-vue-next";
 
   import { ref, computed } from "vue";
@@ -159,4 +160,11 @@
       </a>
     </div>
   </div>
+
+  <!-- hamburger menu mobile -->
+   <div class="md:hidden">
+    <button>
+      <Menu class="w-8 h-8 text-white" />
+    </button>
+   </div>
 </template>
