@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import Swal from 'sweetalert2';
-import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Upload, Ban, MailWarningIcon } from 'lucide-vue-next';
+import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Upload, Ban, MailWarningIcon, GraduationCap, User, ShieldCheck, UserCheck, UserX } from 'lucide-vue-next';
 
 // Impor API (Asumsi path ini sudah benar di project Anda)
 import {
@@ -10,6 +10,7 @@ import {
 } from '~/lib/api/pengguna';
 import { storage_URL } from '~/lib/base.js'
 
+import UiInfoBox from '~/components/ui/infoBox.vue'
 import UiPagination from '~/components/ui/pagination.vue'
 
 definePageMeta({
@@ -591,6 +592,9 @@ function handleDrop(event) {
     profileFile.value = file;
   }
 }
+
+// Alias untuk template (gunakan dashboardStats sebagai userStats)
+const userStats = computed(() => dashboardStats.value)
 </script>
 
 
@@ -607,6 +611,58 @@ function handleDrop(event) {
       {{ notification.message }}
     </div>
   </transition>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <UiInfoBox type="mahasiswa" class="hover:scale-105 transition-transform duration-200">
+            <template #title>
+              <span class="flex items-center gap-2">
+                <GraduationCap class="w-4 h-4 text-primary" />
+                Total Mahasiswa
+              </span>
+            </template>
+            <span class="text-2xl font-bold text-primary">{{ userStats?.mahasiswa || 0 }}</span>
+          </UiInfoBox>
+
+          <UiInfoBox type="dosen" class="hover:scale-105 transition-transform duration-200">
+            <template #title>
+              <span class="flex items-center gap-2">
+                <User class="w-4 h-4 text-blue-600" />
+                Total Dosen
+              </span>
+            </template>
+            <span class="text-2xl font-bold text-blue-600">{{ userStats?.dosen || 0 }}</span>
+          </UiInfoBox>
+
+          <UiInfoBox type="pengelola" class="hover:scale-105 transition-transform duration-200">
+            <template #title>
+              <span class="flex items-center gap-2">
+                <ShieldCheck class="w-4 h-4 text-yellow-600" />
+                Total Pengelola
+              </span>
+            </template>
+            <span class="text-2xl font-bold text-yellow-600">{{ userStats?.pengelola || 0 }}</span>
+          </UiInfoBox>
+
+          <UiInfoBox type="active" class="hover:scale-105 transition-transform duration-200">
+            <template #title>
+              <span class="flex items-center gap-2">
+                <UserCheck class="w-4 h-4 text-green-600" />
+                Pengguna Aktif
+              </span>
+            </template>
+            <span class="text-2xl font-bold text-green-600">{{ userStats?.aktif || 0 }}</span>
+          </UiInfoBox>
+
+          <UiInfoBox type="blocked" class="hover:scale-105 transition-transform duration-200">
+            <template #title>
+              <span class="flex items-center gap-2">
+                <UserX class="w-4 h-4 text-red-600" />
+                Pengguna Terblokir
+              </span>
+            </template>
+            <span class="text-2xl font-bold text-red-600">{{ userStats?.blokir || 0 }}</span>
+          </UiInfoBox>
+        </div>
 
   <div class="flex flex-col md:flex-row md:items-center gap-2 mb-4">
     <div class="flex relative w-full">

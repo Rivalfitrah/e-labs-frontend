@@ -1,9 +1,9 @@
 <script setup>
 import UiPagination from '~/components/ui/pagination.vue'
 import UiInfoBox from '~/components/ui/infoBox.vue'
-import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, QrCode, ImageDown } from 'lucide-vue-next'
+import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, QrCode, ImageDown, Building, CheckCircle, Clock, XCircle } from 'lucide-vue-next'
 // Asumsikan fungsi API Ruangan berada di lokasi yang sama atau sudah diimpor
-import { listRuangan, updateRuangan, deleteRuangan, createRuangan, qrGenerateRuangan, deleteQR } from '~/lib/api/ruangan'
+import { listRuangan, updateRuangan, deleteRuangan, createRuangan, qrGenerateRuangan, deleteQR, getDashboardRuangan } from '~/lib/api/ruangan'
 import { onMounted, ref, computed } from 'vue'
 import Swal from 'sweetalert2'
 import { storage_URL } from '~/lib/base.js'
@@ -16,6 +16,7 @@ definePageMeta({
 // State for data
 const ruangan = ref([])
 const isLoading = ref(true)
+const ruanganStats = ref(null)
 const isGeneratingQR = ref(false); // State baru untuk loading QR
 const qrLoadingIds = ref([]); // Array id ruangan yang sedang proses generate QR
 function setQRLoading(id, status) {
@@ -66,12 +67,36 @@ const newRuangan = ref({
 
 onMounted(async () => {
   try {
+    // Fetch list ruangan terlebih dahulu
     const apiResponse = await listRuangan()
+    
     // PERBAIKAN ROBUST: Mengambil data array ruangan dari response
     const roomsArray = apiResponse?.data || apiResponse;
     const actualData = Array.isArray(roomsArray) ? roomsArray : (roomsArray?.data || []);
-
     ruangan.value = actualData;
+
+    // Fetch dashboard stats secara terpisah dengan error handling
+    try {
+      const statsData = await getDashboardRuangan()
+      // Process ruangan stats
+      if (statsData?.data?.overview) {
+        ruanganStats.value = statsData.data.overview
+      }
+    } catch (statsError) {
+      console.warn('Dashboard endpoint not available, calculating stats from data:', statsError.response?.status)
+      // Hitung statistik dari data yang ada sebagai fallback
+      const total = actualData.length
+      const tersedia = actualData.filter(r => r.status_ruangan?.toLowerCase() === 'tersedia').length
+      const dipinjam = actualData.filter(r => r.status_ruangan?.toLowerCase() === 'dipinjam').length
+      const tidakTersedia = actualData.filter(r => r.status_ruangan?.toLowerCase() === 'tidak tersedia' || r.status_ruangan?.toLowerCase() === 'tidak_tersedia').length
+      
+      ruanganStats.value = {
+        total,
+        tersedia,
+        dipinjam,
+        tidak_tersedia: tidakTersedia
+      }
+    }
 
   } catch (error) {
     console.error('Failed to fetch ruangan list:', error)
@@ -383,6 +408,52 @@ async function handleDeleteQR(item) {
     </div>
   </transition>
 
+  <!-- Statistik Ruangan -->
+  <section class="mb-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Statistik Ruangan</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <UiInfoBox type="total" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <Building class="w-4 h-4 text-primary" />
+            Total Ruangan
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-primary">{{ ruanganStats?.total || 0 }}</span>
+      </UiInfoBox>
+
+      <UiInfoBox type="tersedia" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <CheckCircle class="w-4 h-4 text-green-600" />
+            Ruangan Tersedia
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-green-600">{{ ruanganStats?.tersedia || 0 }}</span>
+      </UiInfoBox>
+
+      <UiInfoBox type="dipinjam" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <Clock class="w-4 h-4 text-yellow-600" />
+            Ruangan Dipinjam
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-yellow-600">{{ ruanganStats?.dipinjam || 0 }}</span>
+      </UiInfoBox>
+
+      <UiInfoBox type="tidak-tersedia" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <XCircle class="w-4 h-4 text-gray-600" />
+            Ruangan Tidak Tersedia
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-gray-600">{{ ruanganStats?.tidak_tersedia || 0 }}</span>
+      </UiInfoBox>
+    </div>
+  </section>
+
   <div class="flex flex-col md:flex-row md:items-center gap-2 mb-4">
     <div class="flex relative w-full">
       <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -500,47 +571,18 @@ async function handleDeleteQR(item) {
       </tbody>
     </table>
 
-    <!-- Pagination Dinamis -->
-    <div v-if="totalPages > 1" class="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
-      <span class="text-sm text-gray-700">
-        Menampilkan
-        <span class="font-semibold">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
-        sampai
-        <span class="font-semibold">{{ Math.min(currentPage * itemsPerPage, filteredRuangan.length) }}</span>
-        dari
-        <span class="font-semibold">{{ filteredRuangan.length }}</span>
-        ruangan
-      </span>
-      <nav class="flex items-center space-x-1" aria-label="Pagination">
-        <button @click="goToPage(1)" :disabled="currentPage === 1"
-          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-          &laquo;
-        </button>
-        <button @click="prevPage" :disabled="currentPage === 1"
-          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-          <ChevronLeft class="w-5 h-5" />
-        </button>
-        <div class="flex space-x-1">
-          <template v-for="(page, idx) in paginationPages" :key="idx">
-            <button v-if="page !== '...'" @click="goToPage(page)" :class="{
-              'bg-primary text-white': page === currentPage,
-              'bg-white text-gray-700 hover:bg-gray-100': page !== currentPage
-            }" class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition">
-              {{ page }}
-            </button>
-            <span v-else class="px-3 py-2 text-gray-400 select-none text-sm">...</span>
-          </template>
-        </div>
-        <button @click="nextPage" :disabled="currentPage === totalPages"
-          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-          <ChevronRight class="w-5 h-5" />
-        </button>
-        <button @click="goToPage(totalPages)" :disabled="currentPage === totalPages"
-          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-          &raquo;
-        </button>
-      </nav>
-    </div>
+    <!-- Pagination Component -->
+    <UiPagination 
+      v-if="totalPages > 1"
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total-items="filteredRuangan.length"
+      :items-per-page="itemsPerPage"
+      item-label="ruangan"
+      @previous="prevPage"
+      @next="nextPage"
+      @go-to-page="goToPage"
+    />
 
   </div>
 

@@ -1,6 +1,7 @@
 <script setup>
+import UiInfoBox from '~/components/ui/infoBox.vue'
 import UiPagination from '~/components/ui/pagination.vue'
-import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Upload } from 'lucide-vue-next'
+import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Upload, Package, CheckCircle, Clock, Wrench, XCircle } from 'lucide-vue-next'
 // Perhatian: Saya menambahkan createBarang, asumsikan fungsi ini ada di api.js
 import { listBarang, updateBarang, deleteBarang, createBarang, getDashboardBarang, getKategoriBarang } from '~/lib/api/barang'
 import { onMounted, ref, computed } from 'vue'
@@ -15,8 +16,8 @@ definePageMeta({
 const barang = ref([])
 const isLoading = ref(true)
 
-// State for dashboard statistics (dummy initial value, replace with real fetch if needed)
-const dashboardStats = ref(null)
+// State for dashboard statistics
+const barangStats = ref(null)
 
 
 // State untuk notifikasi (Toast sederhana)
@@ -104,8 +105,33 @@ const newFileInput = ref(null); // Ref untuk input file (digunakan di modal tamb
 
 onMounted(async () => {
   try {
-    const data = await listBarang()
-    barang.value = data
+    const barangData = await listBarang()
+    barang.value = barangData
+    
+    // Fetch dashboard stats dengan error handling
+    try {
+      const statsData = await getDashboardBarang()
+      // Process barang stats
+      if (statsData?.data?.overview) {
+        barangStats.value = statsData.data.overview
+      }
+    } catch (statsError) {
+      console.warn('Dashboard endpoint not available, calculating stats from data:', statsError.response?.status)
+      // Hitung statistik dari data yang ada sebagai fallback
+      const total = barangData.length
+      const tersedia = barangData.filter(b => b.status?.toLowerCase() === 'tersedia').length
+      const dipinjam = barangData.filter(b => b.status?.toLowerCase() === 'dipinjam').length
+      const rusak = barangData.filter(b => b.status?.toLowerCase() === 'rusak' || b.kondisi?.toLowerCase().includes('rusak')).length
+      const tidakTersedia = barangData.filter(b => b.status?.toLowerCase() === 'tidak tersedia' || b.status?.toLowerCase() === 'tidak_tersedia').length
+      
+      barangStats.value = {
+        total,
+        tersedia,
+        dipinjam,
+        rusak,
+        tidak_tersedia: tidakTersedia
+      }
+    }
   } catch (error) {
     console.error('Failed to fetch barang list:', error)
     showNotification('Gagal memuat data barang.', 'error');
@@ -515,6 +541,63 @@ const newImagePreviewUrl = computed(() => {
       {{ notification.message }}
     </div>
   </transition>
+
+  <!-- Statistik Barang & Alat -->
+  <section class="mb-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Statistik Barang & Alat</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <UiInfoBox type="total" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <Package class="w-4 h-4 text-primary" />
+            Total Barang
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-primary">{{ barangStats?.total || 0 }}</span>
+      </UiInfoBox>
+
+      <UiInfoBox type="tersedia" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <CheckCircle class="w-4 h-4 text-green-600" />
+            Tersedia
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-green-600">{{ barangStats?.tersedia || 0 }}</span>
+      </UiInfoBox>
+
+      <UiInfoBox type="dipinjam" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <Clock class="w-4 h-4 text-yellow-600" />
+            Dipinjam
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-yellow-600">{{ barangStats?.dipinjam || 0 }}</span>
+      </UiInfoBox>
+
+      <UiInfoBox type="rusak" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <Wrench class="w-4 h-4 text-red-600" />
+            Rusak
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-red-600">{{ barangStats?.rusak || 0 }}</span>
+      </UiInfoBox>
+
+      <UiInfoBox type="tidak-tersedia" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <XCircle class="w-4 h-4 text-gray-600" />
+            Tidak Tersedia
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-gray-600">{{ barangStats?.tidak_tersedia || 0 }}</span>
+      </UiInfoBox>
+    </div>
+  </section>
+
   <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
     <div class="flex relative flex-1">
       <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
