@@ -2,12 +2,16 @@
 import { LogOut, CircleUserRound, Menu, X } from "lucide-vue-next";
 import { ref, onMounted } from "vue";
 import { Logout, getProfile } from "~/lib/api/auth";
+import { useRouter } from "vue-router";
+import Swal from "sweetalert2";
 
 // Accept sidebar open prop and emit toggle event
 const props = defineProps({
   isSidebarOpen: { type: [Boolean, Object], default: false }
 })
 const emit = defineEmits(["toggle-sidebar"]);
+
+const router = useRouter()
 
 const user = ref(null)
 
@@ -24,7 +28,19 @@ onMounted(async () => {
 const handleLogout = async () => {
   try {
     await Logout()
-    window.location.href = '/auth/login'  // redirect to login page
+    Swal.fire({
+      icon: 'warning',
+      title: 'Apakah Anda Ingin Keluar?',
+      text: 'You have been logged out successfully!',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, log out',
+      cancelButtonText: 'No, cancel'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await Logout()
+        router.push('/auth/login')  // redirect to login page
+      }
+    })
   } catch (error) {
     console.error('Error during logout:', error)
   }
