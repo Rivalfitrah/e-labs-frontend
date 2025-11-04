@@ -544,7 +544,6 @@ const newImagePreviewUrl = computed(() => {
 
   <!-- Statistik Barang & Alat -->
   <section class="mb-6">
-    <h2 class="text-xl font-bold text-gray-800 mb-4">Statistik Barang & Alat</h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       <UiInfoBox type="total" class="hover:scale-105 transition-transform duration-200">
         <template #title>

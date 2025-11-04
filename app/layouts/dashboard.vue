@@ -15,11 +15,13 @@ const sidebarOpen = ref(false)
     <Sidebar :is-open="sidebarOpen" @close="sidebarOpen = false" />
 
     <div class="flex-1 md:ml-64 flex flex-col min-w-0">
-      <div class="sticky top-0 z-30">
+      <!-- Fixed Header -->
+      <div class="fixed top-0 right-0 left-0 md:left-64 z-30 bg-white">
         <!-- Header will emit toggle-sidebar event -->
         <HeaderDashboard :is-sidebar-open="sidebarOpen" @toggle-sidebar="sidebarOpen = !sidebarOpen" />
       </div>
-      <main class="flex-1 p-6 bg-gray-100 min-h-screen overflow-x-hidden pt-20">
+      <!-- Main Content with proper padding-top to offset fixed header -->
+      <main class="flex-1 p-6 bg-gray-100 min-h-screen overflow-x-hidden pt-[85px]">
         <slot />
       </main>
     </div>

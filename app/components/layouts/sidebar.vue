@@ -8,7 +8,8 @@ import {
   Settings,
   MonitorDot,
   BookOpen,
-  Menu
+  Menu,
+  ChevronDown
 } from "lucide-vue-next";
 
 import { ref, computed } from "vue";
@@ -24,6 +25,7 @@ const emit = defineEmits(["close"]);
 const route = useRoute();
 
 const isPeminjamanOpen = ref(false);
+const isListOpen = ref(false);
 const userRole = ref(null); // Mulai dengan null atau loading state
 
 // Panggil fungsi asinkron untuk mendapatkan peran saat setup
@@ -38,6 +40,7 @@ const baseMenus = [
     name: "Peminjaman",
     icon: ClipboardList,
     link: null, // Set null jika hanya parent
+    toggleKey: "isPeminjamanOpen", // Add toggle key
     submenus: [
       { name: "Barang", icon: Package, link: "/admin/peminjaman/barang" },
       { name: "Ruangan", icon: Building2, link: "/admin/peminjaman/ruangan" },
@@ -47,6 +50,7 @@ const baseMenus = [
     name: "List",
     icon: ClipboardList,
     link: null, // Set null jika hanya parent
+    toggleKey: "isListOpen", // Add toggle key
     submenus: [
       { name: "Pengguna", icon: User, link: "/admin/list/pengguna" },
       { name: "Barang", icon: Package, link: "/admin/list/barang" },
@@ -134,13 +138,27 @@ const menus = computed(() => {
             <div 
               v-else 
               class="block px-4 py-2 rounded-lg transition cursor-pointer text-white hover:bg-green-600 hover:text-white"
+              @click="menu.toggleKey && (menu.toggleKey === 'isPeminjamanOpen' ? isPeminjamanOpen = !isPeminjamanOpen : isListOpen = !isListOpen)"
             >
-              <component :is="menu.icon" class="inline-block w-5 h-5 mr-3" />
-              {{ menu.name }}
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <component :is="menu.icon" class="inline-block w-5 h-5 mr-3" />
+                  {{ menu.name }}
+                </div>
+                <ChevronDown 
+                  v-if="menu.submenus && menu.submenus.length > 0"
+                  class="w-4 h-4 transition-transform duration-200"
+                  :class="menu.toggleKey === 'isPeminjamanOpen' ? (isPeminjamanOpen ? 'rotate-180' : '') : (isListOpen ? 'rotate-180' : '')"
+                />
+              </div>
             </div>
 
             <!-- SUBMENU DENGAN LINGKARAN HOLLOW -->
-            <ul v-if="menu.submenus && menu.submenus.length > 0" class="ml-6 mt-1 space-y-2">
+            <ul 
+              v-if="menu.submenus && menu.submenus.length > 0" 
+              class="ml-6 mt-1 space-y-2 overflow-hidden transition-all duration-300"
+              :class="menu.toggleKey === 'isPeminjamanOpen' ? (isPeminjamanOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0') : (isListOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0')"
+            >
               <li v-for="child in menu.submenus" :key="child.link">
                 <NuxtLink
                   :to="child.link"

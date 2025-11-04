@@ -664,11 +664,11 @@ const userStats = computed(() => dashboardStats.value)
           </UiInfoBox>
         </div>
 
-  <div class="flex flex-col md:flex-row md:items-center gap-2 mb-4">
+  <div class="flex flex-col md:flex-row md:items-center gap-2 mb-4 mt-8">
     <div class="flex relative w-full">
       <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
       <input type="text" v-model="search"
-        class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
+        class="pl-10 pr-4 py-2 w-full border bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
         placeholder="Cari Nama, ID, atau Email Pengguna..." />
     </div>
     <button @click="openAddModal"
