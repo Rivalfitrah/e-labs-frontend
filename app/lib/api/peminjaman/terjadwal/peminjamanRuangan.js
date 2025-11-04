@@ -1,6 +1,6 @@
 import { base_URL } from "~/lib/base";
 import axios from "axios";
-import { getUserRole } from "~/components/middleware/middleware";
+import { getUserRole } from "~/middleware/middleware";
 export async function getListPengajuanRuanganTerjadwal() {
     try {
         const response = await axios.get(`${base_URL}/api/peminjaman/ruangan/terjadwal/list`, {
