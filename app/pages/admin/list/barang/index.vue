@@ -623,8 +623,8 @@ const newImagePreviewUrl = computed(() => {
 
 
   <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
-    <!-- Wrapper untuk tabel dengan overflow horizontal -->
-    <div class="overflow-x-auto">
+    <!-- Desktop Table - Hidden on Mobile -->
+    <div class="hidden md:block overflow-x-auto">
       <table class="w-full table-auto border-separate border-spacing-0 min-w-max">
         <thead>
           <tr class="bg-primary text-white text-center text-xs uppercase tracking-wider">
@@ -707,6 +707,93 @@ const newImagePreviewUrl = computed(() => {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Mobile Card View - Visible on Mobile Only -->
+    <div class="md:hidden divide-y divide-gray-200">
+      <div v-for="(data, index) in paginatedBarang" :key="'mobile-' + data.kode_barang"
+        class="p-4 hover:bg-gray-50 transition">
+        <div class="flex items-start gap-3">
+          <!-- Foto & No -->
+          <div class="flex-shrink-0">
+            <div class="w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-200">
+              <img
+                :src="data.foto_barang_url ? `${storage_URL}/${data.foto_barang_url}` : 'https://placehold.co/64x64/f1f1f1/333333?text=N/A'"
+                alt="Foto Barang" class="w-full h-full object-cover"
+                onerror="this.onerror=null;this.src='https://placehold.co/64x64/f1f1f1/333333?text=N/A';" />
+            </div>
+            <div class="text-center mt-1 text-xs text-gray-500 font-mono">
+              #{{ (currentPage - 1) * itemsPerPage + index + 1 }}
+            </div>
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-gray-900 text-sm mb-2">{{ data.nama_barang }}</h3>
+            
+            <div class="space-y-1 text-xs text-gray-600">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-20">Kode:</span>
+                <span class="font-mono">{{ data.kode_barang }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-20">Kategori:</span>
+                <span>{{ data.kategori.nama_kategori }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-20">Merk:</span>
+                <span>{{ data.merek }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-20">Kondisi:</span>
+                <span :class="{
+                  'bg-green-100 text-green-800': data.kondisi.toLowerCase() === 'baik',
+                  'bg-yellow-100 text-yellow-800': data.kondisi.toLowerCase() === 'rusak ringan',
+                  'bg-red-100 text-red-800': data.kondisi.toLowerCase() === 'rusak berat'
+                }" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                  {{ data.kondisi }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-20">Status:</span>
+                <span class="font-mono">{{ data.status }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-20">Jumlah:</span>
+                <span class="font-semibold">{{ data.jumlah }}</span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-3 gap-2 mt-3">
+              <button @click="openImageModal(data)"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1">
+                <ImageIcon class="w-3.5 h-3.5" />
+                <span>Foto</span>
+              </button>
+              <button @click="openEditModal(data)"
+                class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1">
+                <Pencil class="w-3.5 h-3.5" />
+                <span>Edit</span>
+              </button>
+              <button @click="confirmDelete(data)"
+                class="bg-red-500 hover:bg-red-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1">
+                <Trash2 class="w-3.5 h-3.5" />
+                <span>Hapus</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State for Mobile -->
+      <div v-if="paginatedBarang.length === 0 && filteredBarang.length > 0" class="p-8 text-center text-gray-500 text-sm">
+        Tidak ada barang di halaman ini.
+      </div>
+      <div v-else-if="filteredBarang.length === 0" class="p-8 text-center text-gray-500 text-sm">
+        Tidak ada hasil yang cocok dengan pencarian Anda.
+      </div>
+    </div>
 
     <!-- Pagination Dinamis -->
     <div v-if="totalPages > 1" class="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
@@ -749,9 +836,7 @@ const newImagePreviewUrl = computed(() => {
         </button>
       </nav>
     </div>
-
   </div>
-</div>
 
 
 

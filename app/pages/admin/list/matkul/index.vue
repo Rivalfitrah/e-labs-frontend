@@ -354,6 +354,8 @@ async function handleDelete(id, namaMatkul) {
 
 
     <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
+        <!-- Desktop Table - Hidden on Mobile -->
+        <div class="hidden md:block">
         <table class="w-full border-separate border-spacing-0">
             <thead>
                 <tr class="bg-primary text-white text-center text-sm uppercase tracking-wider">
@@ -406,6 +408,64 @@ async function handleDelete(id, namaMatkul) {
                 </tr>
             </tbody>
         </table>
+        </div>
+
+        <!-- Mobile Card View - Visible on Mobile Only -->
+        <div class="md:hidden divide-y divide-gray-200">
+            <div v-for="(data, index) in paginatedMatakuliah" :key="'mobile-' + data.id"
+                class="p-4 hover:bg-gray-50 transition">
+                <div class="flex items-start gap-3">
+                    <!-- No -->
+                    <div class="flex-shrink-0 w-8">
+                        <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">
+                            {{ (currentPage - 1) * itemsPerPage + index + 1 }}
+                        </div>
+                    </div>
+
+                    <!-- Info -->
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-semibold text-gray-900 text-sm mb-2">{{ data.matkul }}</h3>
+                        
+                        <div class="space-y-1 text-xs text-gray-600">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-gray-500 w-20">Prodi:</span>
+                                <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                                    {{ data.prodi?.nama_prodi || 'N/A' }}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-gray-500 w-20">Semester:</span>
+                                <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                                    {{ data.semester }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="grid grid-cols-2 gap-2 mt-3">
+                            <button @click="openEditModal(data)"
+                                class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1">
+                                <Pencil class="w-3.5 h-3.5" />
+                                <span>Edit</span>
+                            </button>
+                            <button @click="confirmDelete(data)"
+                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1">
+                                <Trash2 class="w-3.5 h-3.5" />
+                                <span>Hapus</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State for Mobile -->
+            <div v-if="paginatedMatakuliah.length === 0 && filteredMatakuliah.length > 0" class="p-8 text-center text-gray-500 text-sm">
+                Tidak ada mata kuliah di halaman ini.
+            </div>
+            <div v-else-if="filteredMatakuliah.length === 0" class="p-8 text-center text-gray-500 text-sm">
+                Tidak ada hasil yang cocok dengan pencarian Anda.
+            </div>
+        </div>
 
 
         <div v-if="totalPages > 1"

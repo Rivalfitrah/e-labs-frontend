@@ -479,15 +479,17 @@ async function handleDeleteQR(item) {
 
 
   <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
+    <!-- Desktop Table - Hidden on Mobile -->
+    <div class="hidden md:block">
     <table class="w-full border-separate border-spacing-0">
       <thead>
         <tr class="bg-primary text-white text-center text-sm uppercase tracking-wider">
-          <th class="text-center  px-5 py-3 w-12">No</th>
-          <th class="text-center  px-5 py-3 w-40">Gedung</th>
-          <th class="text-center  px-5 py-3 w-56">Nama Ruangan</th>
-          <th class="text-center  px-5 py-3 w-32">Kode Ruangan</th>
-          <th class="text-center  px-5 py-3 w-32">Status Ruangan</th>
-          <th class="text-center  px-5 py-3 w-32">QR Code</th>
+          <th class="text-center  px-5 py-3 w-12">No</th>
+          <th class="text-center  px-5 py-3 w-40">Gedung</th>
+          <th class="text-center  px-5 py-3 w-56">Nama Ruangan</th>
+          <th class="text-center  px-5 py-3 w-32">Kode Ruangan</th>
+          <th class="text-center  px-5 py-3 w-32">Status Ruangan</th>
+          <th class="text-center  px-5 py-3 w-32">QR Code</th>
           <th class="text-center px-5 py-3 w-32">Aksi</th>
         </tr>
       </thead>
@@ -569,6 +571,97 @@ async function handleDeleteQR(item) {
         </tr>
       </tbody>
     </table>
+    </div>
+
+    <!-- Mobile Card View - Visible on Mobile Only -->
+    <div class="md:hidden divide-y divide-gray-200">
+      <div v-for="(data, index) in paginatedRuangan" :key="'mobile-' + data.kode_ruangan"
+        class="p-4 hover:bg-gray-50 transition">
+        <div class="flex items-start gap-3">
+          <!-- QR Code & No -->
+          <div class="flex-shrink-0">
+            <div class="w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-200">
+              <img v-if="qrLoadingIds.includes(data.id)" src="https://placehold.co/64x64/f1f1f1/333333?text=..."
+                alt="Loading QR" class="w-full h-full object-cover" />
+              <img v-else
+                :src="data.QR_Image_url ? `${storage_URL}/uploads/${data.QR_Image_url}` : 'https://placehold.co/64x64/f1f1f1/333333?text=QR'"
+                alt="QR Code Ruangan" class="w-full h-full object-cover"
+                @error="event.target.src = 'https://placehold.co/64x64/f1f1f1/333333?text=QR'" />
+            </div>
+            <div class="text-center mt-1 text-xs text-gray-500 font-mono">
+              #{{ (currentPage - 1) * itemsPerPage + index + 1 }}
+            </div>
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-gray-900 text-sm mb-2">{{ data.nama_ruangan }}</h3>
+            
+            <div class="space-y-1 text-xs text-gray-600">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-24">Kode:</span>
+                <span class="font-mono">{{ data.kode_ruangan }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-24">Gedung:</span>
+                <span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                  {{ data.gedung }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-24">Status:</span>
+                <span :class="{
+                  'bg-green-100 text-green-800': data.status === 'Tersedia',
+                  'bg-red-100 text-red-800': data.status === 'Tidak Tersedia'
+                }" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                  {{ data.status || 'N/A' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-2 mt-3">
+              <button @click="handleGenerateQR(data)" :disabled="isGeneratingQR"
+                :class="{ 'opacity-60 cursor-not-allowed': isGeneratingQR }"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1">
+                <QrCode class="w-3.5 h-3.5" />
+                <span>Generate QR</span>
+              </button>
+              <button @click="handleDeleteQR(data)" :disabled="isGeneratingQR"
+                :class="{ 'opacity-60 cursor-not-allowed': isGeneratingQR }"
+                class="bg-red-800 hover:bg-red-900 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1">
+                <QrCode class="w-3.5 h-3.5" />
+                <span>Hapus QR</span>
+              </button>
+              <a v-if="data.QR_Image_url" href="javascript:void(0)"
+                @click.stop="downloadQR(`${storage_URL}/uploads/${data.QR_Image_url}`, `QR_${data.gedung}_Ruangan_${data.kode_ruangan}.png`)"
+                class="bg-green-600 hover:bg-green-700 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1">
+                <ImageDown class="w-3.5 h-3.5" />
+                <span>Download</span>
+              </a>
+              <button @click="openEditModal(data)"
+                class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1">
+                <Pencil class="w-3.5 h-3.5" />
+                <span>Edit</span>
+              </button>
+              <button @click="confirmDelete(data)"
+                class="bg-red-500 hover:bg-red-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1 col-span-2">
+                <Trash2 class="w-3.5 h-3.5" />
+                <span>Hapus Ruangan</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State for Mobile -->
+      <div v-if="paginatedRuangan.length === 0 && filteredRuangan.length > 0" class="p-8 text-center text-gray-500 text-sm">
+        Tidak ada ruangan di halaman ini.
+      </div>
+      <div v-else-if="filteredRuangan.length === 0" class="p-8 text-center text-gray-500 text-sm">
+        Tidak ada hasil yang cocok dengan pencarian Anda.
+      </div>
+    </div>
 
     <!-- Pagination Component -->
     <UiPagination 
