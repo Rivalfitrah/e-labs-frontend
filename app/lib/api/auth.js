@@ -3,6 +3,7 @@ import axios from 'axios'
 
 // filepath: d:\Fahri\codebase\projects ssmt5\backend-express\e-labs-frontend\app\lib\api.js
 import { base_URL } from '../base'
+import { navigateTo } from '#app';
 
 console.log('runtime config:', useRuntimeConfig())
 export async function Login(email, password) {
@@ -36,16 +37,26 @@ export async function Logout(){
     }
 }
 
-export async function getProfile(){
-    try{
-        const response = await axios.get(
-            `${base_URL}/api/auth/me`,
-            { withCredentials: true }
-        );
-        console.log('Profile response:', response.data);
-        return response.data;
-    }catch(error){
-        console.error('Error fetching profile:', error);
-        throw error;
+export async function getProfile() {
+  try {
+    const response = await axios.get(`${base_URL}/api/auth/me`, {
+      withCredentials: true,
+    });
+    console.log("Profile response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+
+    // ✅ Jika token tidak valid / expired (backend kirim 401 atau 403)
+    if (error.response && [401, 403].includes(error.response.status)) {
+      console.warn("Token tidak valid atau sudah expired. Redirect ke login...");
+      try {
+        await navigateTo("/auth/login");
+      } catch (navError) {
+        console.error("Gagal redirect ke login:", navError);
+      }
     }
+
+    throw error;
+  }
 }

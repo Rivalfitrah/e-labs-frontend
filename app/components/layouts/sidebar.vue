@@ -14,7 +14,7 @@ import {
 
 import { ref, computed } from "vue";
 import { useRoute } from "vue-router";
-import { getUserRole } from "../middleware/middleware"; // ASUMSI PATH INI
+import { getUserRole } from "~/middleware/middleware";
 
 // accept prop from layout to control mobile sidebar
 const props = defineProps({
