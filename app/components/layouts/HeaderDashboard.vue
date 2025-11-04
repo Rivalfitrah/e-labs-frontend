@@ -1,7 +1,14 @@
 <script setup>
-import { LogOut, CircleUserRound } from "lucide-vue-next";
+import { LogOut, CircleUserRound, Menu, X } from "lucide-vue-next";
 import { ref, onMounted } from "vue";
 import { Logout, getProfile } from "~/lib/api/auth";
+
+// Accept sidebar open prop and emit toggle event
+const props = defineProps({
+  isSidebarOpen: { type: [Boolean, Object], default: false }
+})
+const emit = defineEmits(["toggle-sidebar"]);
+
 const user = ref(null)
 
 onMounted(async () => {
@@ -25,30 +32,38 @@ const handleLogout = async () => {
 </script>
 
 <template>
-<div class="bg-white w-full shadow-md">
-  <header class="flex justify-end items-center gap-4 px-6 py-3 border-b">
-    <button
-      class="p-2 rounded-full bg-white border border-gray-300 hover:bg-gray-100 transition"
-      @click="handleLogout"
-    >
-      <!-- use Vue binding syntax for props -->
-      <LogOut :size="22" />
-    </button>
-
-    <div class="flex items-center gap-2 cursor-pointer">
-      <div class="w-10 h-10 bg-gray-500 rounded-full overflow-hidden">
-        <!-- public assets should be referenced from root, adjust if your image is stored elsewhere -->
-        <!-- <img
-          src="/logo.jpg"
-          alt="Profile"
-          class="w-full h-full object-cover"
-        /> -->
-        <CircleUserRound :size="40" class="text-white" />
+  <div class="bg-white w-full shadow-md fixed">
+    <header class="flex items-center justify-between gap-4 px-4 md:px-6 py-3 border-b">
+      <!-- Left: hamburger (mobile) -->
+      <div class="flex items-center gap-2">
+        <button
+          class="p-2 rounded-md md:hidden text-gray-700 hover:bg-gray-100 transition"
+          @click="emit('toggle-sidebar')"
+          aria-label="Toggle sidebar"
+        >
+          <Menu v-if="!props.isSidebarOpen" :size="20" />
+          <X v-else :size="20" />
+        </button>
       </div>
-      <span class="hidden md:inline text-[#243B83] font-medium">
-        {{ user && user.data ? user.data.nama : 'Guest' }}
-      </span>
-    </div>
-  </header>
-</div>
+
+      <!-- Right: actions -->
+      <div class="flex items-center ml-auto gap-3">
+        <button
+          class="p-2 rounded-full bg-white border border-gray-300 hover:bg-gray-100 transition"
+          @click="handleLogout"
+        >
+          <LogOut :size="22" />
+        </button>
+
+        <div class="flex items-center gap-2 cursor-pointer">
+          <div class="w-10 h-10 bg-gray-500 rounded-full overflow-hidden">
+            <CircleUserRound :size="40" class="text-white" />
+          </div>
+          <span class="hidden md:inline text-[#243B83] font-medium">
+            {{ user && user.data ? user.data.nama : 'Guest' }}
+          </span>
+        </div>
+      </div>
+    </header>
+  </div>
 </template>

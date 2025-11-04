@@ -13,8 +13,13 @@ import {
 
 import { ref, computed } from "vue";
 import { useRoute } from "vue-router";
-// Ganti dengan path file yang sesuai
 import { getUserRole } from "../middleware/middleware"; // ASUMSI PATH INI
+
+// accept prop from layout to control mobile sidebar
+const props = defineProps({
+  isOpen: { type: [Boolean, Object], default: false }
+})
+const emit = defineEmits(["close"]);
 
 const route = useRoute();
 
@@ -88,11 +93,17 @@ const menus = computed(() => {
   // Jika peran tidak dibatasi (e.g., admin), kembalikan baseMenus lengkap
   return baseMenus;
 });
+
+// NOTE: sidebar open state comes from layout via prop `isOpen`
 </script>
 
 <template>
+  <!-- backdrop for mobile when sidebar is open -->
+  <div v-if="props.isOpen" class="fixed inset-0 bg-black/40 z-40 md:hidden" @click="emit('close')"></div>
+
   <div
-    class="fixed top-0 left-0 h-screen w-64 bg-primary text-secondary flex flex-col shadow-xl z-40 transform transition-transform duration-300 md:fixed md:translate-x-0"
+    class="fixed top-0 left-0 h-screen w-64 bg-primary text-secondary flex flex-col shadow-xl z-50 transform transition-transform duration-300"
+    :class="props.isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
   >
     <div class="p-6 border-b border-secondary/20">
       <div class="text-center">
@@ -171,10 +182,4 @@ const menus = computed(() => {
     </div>
   </div>
 
-  <!-- hamburger menu mobile -->
-   <div class="md:hidden">
-    <button>
-      <Menu class="w-8 h-8 text-white" />
-    </button>
-   </div>
 </template>
