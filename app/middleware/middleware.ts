@@ -1,5 +1,6 @@
 import { getProfile } from "~/lib/api/auth";
 
+
 export async function middlewareAuth(){
     try{
         const profile = await getProfile();
@@ -10,7 +11,7 @@ export async function middlewareAuth(){
         throw error;
     }
 }
-export async function middlewareRoleCheck(allowedRoles = []) {
+export async function middlewareRoleCheck(allowedRoles: string[] = []) {
     try {
         const profile = await getProfile();
         console.log('Middleware role check profile:', profile);

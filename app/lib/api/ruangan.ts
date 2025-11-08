@@ -16,7 +16,7 @@ export async function listRuangan() {
     }
 }
 
-export async function updateRuangan(id, formData) {
+export async function updateRuangan(id: string, formData: any) {
     // Token ada di httpOnly cookies, tidak perlu set Authorization header manual
     try {
         const response = await axios.patch(
@@ -37,7 +37,7 @@ export async function updateRuangan(id, formData) {
     }
 }
 
-export async function deleteRuangan(id) {
+export async function deleteRuangan(id: string) {
     try {
         const response = await axios.delete(
             `${base_URL}/api/admin/master/ruangan/delete/${id}`,
@@ -55,7 +55,7 @@ export async function deleteRuangan(id) {
     }
 }
 
-export async function createRuangan(formData) {
+export async function createRuangan(formData: any) {
     // Token ada di httpOnly cookies, tidak perlu set Authorization header manual
     try {
         const response = await axios.post(
@@ -89,7 +89,7 @@ export async function getDashboardRuangan() {
     }
 }
 
-export async function qrGenerateRuangan(id, urlName) {
+export async function qrGenerateRuangan(id: string, urlName: string) {
     try {
         const response = await axios.post(
             `${base_URL}/api/admin/master/ruangan/generateQr/${id}`,
@@ -109,7 +109,7 @@ export async function qrGenerateRuangan(id, urlName) {
     }
 }
 
-export async function deleteQR(id) {
+export async function deleteQR(id: string) {
     try {
         const response = await axios.delete(
             `${base_URL}/api/admin/master/ruangan/QR/delete/${id}`,
@@ -125,7 +125,7 @@ export async function deleteQR(id) {
     }
 }
 
-export async function getRuanganID(id) {
+export async function getRuanganID(id: string) {
     try {
         const response = await axios.get(`${base_URL}/api/peminjaman/ruangan/${id}`)
         console.log('Fetched ruangan by ID data:', response.data)

@@ -7,7 +7,7 @@ import { navigateTo } from '#app';
 import Swal from 'sweetalert2';
 
 console.log('runtime config:', useRuntimeConfig())
-export async function Login(email, password) {
+export async function Login(email: string, password: string) {
     try {
         const response = await axios.post(
             `${base_URL}/api/auth/login`,
@@ -45,7 +45,7 @@ export async function getProfile() {
     });
     console.log("Profile response:", response.data);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching profile:", error);
 
     // ✅ Jika token tidak valid / expired

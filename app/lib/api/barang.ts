@@ -18,7 +18,7 @@ export async function listBarang() {
     }
 }
 
-export async function updateBarang(id, formData) {
+export async function updateBarang(id: string, formData: any) {
     // Token ada di httpOnly cookies, tidak perlu set Authorization header manual
     try {
         const response = await axios.patch(
@@ -39,7 +39,7 @@ export async function updateBarang(id, formData) {
     }
 }
 
-export async function deleteBarang(id) {
+export async function deleteBarang(id: string) {
     try {
         const response = await axios.delete(
             `${base_URL}/api/admin/master/barang/delete/${id}`,
@@ -57,7 +57,7 @@ export async function deleteBarang(id) {
     }
 }
 
-export async function createBarang(formData) {
+export async function createBarang(formData: any) {
     // Token ada di httpOnly cookies, tidak perlu set Authorization header manual
     try {
         const response = await axios.post(

@@ -14,7 +14,7 @@ export async function getListPengajuanRuanganTerjadwal() {
     }
 }
 
-export async function verifikasiPengajuanRuanganTerjadwal(id, status) {
+export async function verifikasiPengajuanRuanganTerjadwal(id: any, status: any) {
     try {
         const role = await getUserRole(); // Ensure user role is checked before proceeding
         if (role !== 'pengelola' && role !== 'superadmin') {

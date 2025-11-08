@@ -17,7 +17,7 @@ export async function listUser() {
     }
 }
 
-export async function updateUser(uniqueId, formData) {
+export async function updateUser(uniqueId: any, formData: any) {
     // Token ada di httpOnly cookies, tuniqueIdak perlu set Authorization header manual
     try {
         const response = await axios.patch(
@@ -38,7 +38,7 @@ export async function updateUser(uniqueId, formData) {
     }
 }
 
-export async function deleteUser(id) {
+export async function deleteUser(id: string) {
     try {
         const response = await axios.delete(
             `${base_URL}/api/admin/users/${id}`,
@@ -56,7 +56,7 @@ export async function deleteUser(id) {
     }
 }
 
-export async function createUser(formData) {
+export async function createUser(formData: any) {
     // Token ada di httpOnly cookies, tidak perlu set Authorization header manual
     try {
         const response = await axios.post(
@@ -90,7 +90,7 @@ export async function dashboardUser() {
     }   
 }
 
-export async function deactivatedUser(id) {
+export async function deactivatedUser(id: string) {
     try {
         const response = await axios.patch(
             `${base_URL}/api/admin/users/${id}/deactivate`,
@@ -108,7 +108,7 @@ export async function deactivatedUser(id) {
 }
 
 
-export async function reactivateUser(id) {
+export async function reactivateUser(id: string) {
     try {
         const response = await axios.patch(
             `${base_URL}/api/admin/users/${id}/reactivate`,
@@ -137,7 +137,7 @@ export async function getProdiList() {
         throw error;
     }
 }
-export async function giveWarning(uniqueId) {
+export async function giveWarning(uniqueId: string) {
     try {
         const response = await axios.post(
             `${base_URL}/api/admin/users/${uniqueId}/warning`,
@@ -180,7 +180,7 @@ export async function addMatakuliah() {
     }
 }
 
-export async function deleteMatakuliah(id) {
+export async function deleteMatakuliah(id: string) {
     try {
         const response = await axios.delete(`${base_URL}/api/admin/matkul/${id}`, {
             withCredentials: true
@@ -193,7 +193,7 @@ export async function deleteMatakuliah(id) {
     }
 }
 
-export async function updateMatakuliah(id, formData) {
+export async function updateMatakuliah(id: string, formData: any) {
     try {
         const response = await axios.patch(
             `${base_URL}/api/admin/matkul/${id}`,
@@ -210,7 +210,7 @@ export async function updateMatakuliah(id, formData) {
     }
 }
 
-export async function getDetailMatkul(id) {
+export async function getDetailMatkul(id: string) {
     try {
         const response = await axios.get(`${base_URL}/api/admin/matkul/${id}`, {
             withCredentials: true
