@@ -4,6 +4,7 @@ import { ref, onMounted } from "vue";
 import { Logout, getProfile } from "~/lib/api/auth";
 import { useRouter } from "vue-router";
 import Swal from "sweetalert2";
+import ProfilDropdown from "~/components/ui/ProfilDropdown.vue";
 
 // Accept sidebar open prop and emit toggle event
 const props = defineProps({
@@ -66,24 +67,8 @@ const handleLogout = async () => {
 
       <!-- Right: user info & logout -->
       <div class="flex items-center gap-3 ml-auto">
-        <!-- Logout Button -->
-        <button
-          class="p-2 rounded-full bg-white border border-gray-300 hover:bg-red-50 hover:border-red-300 transition group"
-          @click="handleLogout"
-          title="Logout"
-        >
-          <LogOut :size="20" class="text-gray-700 group-hover:text-red-600 transition" />
-        </button>
         <!-- User Profile -->
-        <div class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1 transition">
-          <div class="w-10 h-10 bg-gray-500 rounded-full overflow-hidden flex items-center justify-center">
-            <CircleUserRound :size="40" class="text-white" />
-          </div>
-          <span class="hidden sm:inline text-gray-700 font-medium">
-            {{ user?.data?.nama || 'Guest' }}
-          </span>
-        </div>
-
+         <ProfilDropdown />
       </div>
     </div>
   </header>
