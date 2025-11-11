@@ -5,13 +5,14 @@ import axios from 'axios'
 import { base_URL } from '../base'
 import { navigateTo } from '#app';
 import Swal from 'sweetalert2';
+import type { LoginPayload, UpdatePasswordPayload } from '../types/AuthType';
 
 console.log('runtime config:', useRuntimeConfig())
-export async function Login(email: string, password: string) {
+export async function Login(payload: LoginPayload) {
     try {
         const response = await axios.post(
             `${base_URL}/api/auth/login`,
-            { email, password },
+            payload,
             { withCredentials: true } // <-- penting!
         );
         console.log('Login response:', response.data);
@@ -72,12 +73,12 @@ export async function getProfile() {
   }
 }
 
-export async function UpdatePassword(oldPassword: string, newPassword: string, confirmPassword: string) {
+export async function UpdatePassword(payload: UpdatePasswordPayload) {
     try {
         const response = await axios.patch(
             `${base_URL}/api/auth/change-your-password`,
-            { oldPassword, newPassword, confirmPassword },
-            { withCredentials: true } // <-- penting!
+            payload,
+            { withCredentials: true } 
         );
         console.log('Update password response:', response.data);
         return response.data;
