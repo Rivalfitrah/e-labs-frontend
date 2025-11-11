@@ -80,7 +80,7 @@ function handleClose() {
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+  <div v-if="show" class="fixed inset-0 bg-transparent bg-opacity-50 z-50 flex justify-center items-center">
     <div class="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full">
       <h3 class="text-xl font-bold mb-4">{{ title }}</h3>
       

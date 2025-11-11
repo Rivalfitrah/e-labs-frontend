@@ -71,3 +71,18 @@ export async function getProfile() {
     throw error;
   }
 }
+
+export async function UpdatePassword(oldPassword: string, newPassword: string, confirmPassword: string) {
+    try {
+        const response = await axios.patch(
+            `${base_URL}/api/auth/change-your-password`,
+            { oldPassword, newPassword, confirmPassword },
+            { withCredentials: true } // <-- penting!
+        );
+        console.log('Update password response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error during update password:', error);
+        throw error;
+    }
+}
