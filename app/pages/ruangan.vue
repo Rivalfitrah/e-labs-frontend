@@ -1,25 +1,24 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import ConfirmModal from '@/components/landing/ConfirmationModal.vue'; 
-import BorrowForm from '@/components/landing/BorrowForm.vue';
-import { getAllRuangan, pengajuanRuanganTerjadwal } from '~/lib/api/ruangan/ruanganApi';
-import Swal from 'sweetalert2'; // Tambahkan import
+import ConfirmModal from '/components/landing/ConfirmationModal.vue';
+import BorrowForm from '/components/landing/BorrowForm.vue';
+import { getAllRuangan, pengajuanRuanganTerjadwal } from '/lib/api/ruangan/ruanganAPI';
+import Swal from 'sweetalert2';
 
 // --- State Halaman ---
 const selectedBuildingName = ref('');
-// isLoading dihapus
 
 // --- State Modal ---
 const showModal = ref(false);
-const showBorrowForm = ref(false); 
-const selectedRoom = ref(null); 
+const showBorrowForm = ref(false);
+const selectedRoom = ref(null);
 const newBookingId = ref(null);
 
 // --- Data ---
 const buildings = ref([]);
 const nimInput = ref('');
 
-// --- Computed Properties (Termasuk Validasi NIM) ---
+// --- Computed Properties ---
 const currentBuildingData = computed(() => {
   if (!selectedBuildingName.value) {
     return null;
@@ -35,14 +34,19 @@ const fetchAndMapRuangan = async () => {
     const grouped = ruanganData.reduce((acc, r) => {
       const gedung = r.gedung ?? 'Unknown';
       if (!acc[gedung]) acc[gedung] = [];
+
+      let statusText = 'Tersedia';
+      if (r.status === 'PENDING') statusText = 'Pending';
+      if (r.status === 'DIAJUKAN') statusText = 'Diajukan';
+
       acc[gedung].push({
         id: r.id?.toString() ?? (r.kode_ruangan ?? Math.random().toString()),
         name: r.nama_ruangan
           ? `${r.nama_ruangan}${r.kode_ruangan ? ` (${r.kode_ruangan})` : ''}`
           : (r.kode_ruangan ?? 'Unnamed Room'),
-        gedung, // tambahkan ini
+        gedung,
         capacity: r.capacity ?? null,
-        status: (r.status ?? 'KOSONG').toLowerCase() === 'kosong' ? 'Tersedia' : r.status,
+        status: statusText,
       });
 
       return acc;
@@ -62,7 +66,40 @@ const fetchAndMapRuangan = async () => {
   }
 };
 
-onMounted(fetchAndMapRuangan);
+onMounted(async () => {
+  await fetchAndMapRuangan();
+
+  const pendingId = sessionStorage.getItem('pendingBookingId');
+  const pendingNim = sessionStorage.getItem('pendingNim');
+  const pendingRoomData = sessionStorage.getItem('pendingRoom');
+
+  if (pendingId && pendingNim && pendingRoomData) {
+    const room = JSON.parse(pendingRoomData);
+    
+    Swal.fire({
+      title: 'Booking Belum Selesai',
+      text: `Anda punya booking ruangan ${room.name} yang belum lengkap. Lanjutkan?`,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Lanjutkan',
+      cancelButtonText: 'Batalkan Booking'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        selectedRoom.value = room;
+        newBookingId.value = pendingId;
+        nimInput.value = pendingNim;
+        showBorrowForm.value = true;
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        sessionStorage.removeItem('pendingBookingId');
+        sessionStorage.removeItem('pendingNim');
+        sessionStorage.removeItem('pendingRoom');
+        
+        fetchAndMapRuangan(); 
+        Swal.fire('Dibatalkan', 'Booking Anda telah dibatalkan.', 'info');
+      }
+    });
+  }
+});
 
 // --- Functions Halaman ---
 const selectBuilding = (buildingName) => {
@@ -73,16 +110,16 @@ const backToSelection = () => {
   selectedBuildingName.value = '';
 };
 
-// --- Fungsi Modal (SUDAH DIGABUNGKAN) ---
+// --- Fungsi Modal ---
 const openConfirmModal = (room) => {
-  if (room.status === 'Tersedia') {
+  if (room.status === 'Tersedia' || room.status === 'Pending') {
     selectedRoom.value = room;
     showModal.value = true;
   } else {
     Swal.fire({
       icon: 'warning',
       title: 'Ruangan Tidak Tersedia',
-      text: 'Ruangan ini sedang tidak tersedia atau dipinjam.',
+      text: 'Ruangan ini sudah diajukan atau dipinjam.',
     });
   }
 };
@@ -94,7 +131,6 @@ const closeConfirmModal = (resetRoom = true) => {
   }
 };
 
-// --- Fungsi Modal ---
 const handleConfirm = async (nimPeminjam) => {
   try {
     nimInput.value = nimPeminjam;
@@ -102,16 +138,12 @@ const handleConfirm = async (nimPeminjam) => {
       nim: nimPeminjam,
       ruangan_id: Number(selectedRoom.value.id),
     });
-    console.log('Res pengajuan:', res);
 
     newBookingId.value = res.data?.id || res.data?.data?.id;
 
-    sessionStorage.setItem('eLabsBorrowData', JSON.stringify({
-      id: newBookingId.value,
-      nim: nimPeminjam,
-      gedung: selectedRoom.value.gedung,
-      lab: selectedRoom.value.name
-    }));
+    sessionStorage.setItem('pendingBookingId', newBookingId.value);
+    sessionStorage.setItem('pendingNim', nimPeminjam);
+    sessionStorage.setItem('pendingRoom', JSON.stringify(selectedRoom.value));
 
     closeConfirmModal(false);
     setTimeout(() => {
@@ -120,47 +152,50 @@ const handleConfirm = async (nimPeminjam) => {
 
   } catch (error) {
     console.error("Error saat membuat pengajuan ruangan:", error);
+    const errorMessage = error.response?.data?.message || 'Gagal membuat pengajuan. Silakan coba lagi.';
     Swal.fire({
       icon: 'error',
       title: 'Gagal Membuat Pengajuan',
-      text: 'Gagal membuat pengajuan ruangan. Silakan coba lagi.',
+      text: errorMessage,
     });
   }
 };
 
 // --- Fungsi Form Peminjaman ---
 const closeBorrowForm = () => {
+  // 1. Tutup modal (seperti sebelumnya)
   showBorrowForm.value = false;
   selectedRoom.value = null; 
   newBookingId.value = null;
+  backToSelection(); 
 };
 
-const handleSubmitBorrow = async (formData) => {
-  console.log("Submit data akhir:", { ...formData, bookingId: newBookingId.value });
+const handleSubmitBorrow = async () => {
+  console.log("BorrowForm submitted successfully, refreshing data...");
   try {
-    // Simulasi submit akhir ke API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Setelah submit sukses, fetch ulang data ruangan agar statusnya update
     await fetchAndMapRuangan();
 
     Swal.fire({
       icon: 'success',
       title: 'Booking Berhasil!',
-      text: 'Ruangan berhasil dipesan dan status ruangan otomatis terbaru.',
+      text: 'Peminjaman Anda telah dikonfirmasi.',
+      timer: 2000,
+      showConfirmButton: false
     });
 
+    sessionStorage.removeItem('pendingBookingId');
+    sessionStorage.removeItem('pendingNim');
+    sessionStorage.removeItem('pendingRoom');
+
     closeBorrowForm();
-    
-    // Otomatis kembali ke pilihan gedung
     backToSelection();
 
   } catch (error) {
-    console.error('Gagal update booking:', error);
+    console.error('Gagal refresh data setelah submit:', error);
     Swal.fire({
       icon: 'error',
-      title: 'Gagal Menyimpan',
-      text: 'Gagal menyimpan detail peminjaman. Silakan coba lagi.',
+      title: 'Gagal Refresh Data',
+      text: 'Booking Anda berhasil, tapi gagal me-refresh tampilan. Silakan refresh halaman.',
     });
   }
 };
@@ -179,6 +214,14 @@ function handleNimInput(event) {
     nimInput.value = 'J' + rest;
   }
 }
+
+const handleCloseBorrowForm = async () => {
+  closeBorrowForm(); // Tutup modal
+  backToSelection(); // Kembali ke pemilihan gedung (ini yang bikin 'refresh' tampilan)
+  
+  // Opsional: Jika kamu BENAR-BENAR ingin mengambil data terbaru dari server saat ini juga:
+  // await fetchAndMapRuangan(); 
+};
 </script>
 
 <template>
@@ -193,7 +236,6 @@ function handleNimInput(event) {
             Silakan pilih gedung untuk melihat ruangan yang tersedia.
           </p>
         </div>
-        
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
           <div 
             v-for="building in buildings" 
@@ -223,8 +265,9 @@ function handleNimInput(event) {
             @click="openConfirmModal(room)"             
             class="bg-white rounded-lg shadow-lg p-6 transition duration-300 transform hover:-translate-y-1 hover:shadow-xl"
             :class="{
-              'cursor-pointer': room.status === 'Tersedia',
-              'cursor-not-allowed opacity-60': room.status !== 'Tersedia'
+              'cursor-pointer': room.status === 'Tersedia' || room.status === 'Pending',
+              'cursor-not-allowed opacity-60': room.status === 'Diajukan',
+              'ring-2 ring-yellow-500': room.status === 'Pending'
             }"
           >
             <h3 class="text-xl font-bold text-gray-800 mb-2">{{ room.name }}</h3>
@@ -232,7 +275,8 @@ function handleNimInput(event) {
               class="px-3 py-1 rounded-full text-sm font-semibold"
               :class="{
                 'bg-green-100 text-green-800': room.status === 'Tersedia',
-                'bg-red-100 text-red-800': room.status !== 'Tersedia'
+                'bg-yellow-100 text-yellow-800': room.status === 'Pending',
+                'bg-red-100 text-red-800': room.status === 'Diajukan'
               }"
             >
               {{ room.status }}
@@ -258,6 +302,7 @@ function handleNimInput(event) {
     :room="selectedRoom"
     :id-peminjaman="newBookingId"
     :booking-id="newBookingId"
-    @submitted="handleSubmitBorrow" @close="closeBorrowForm"
+    @submitted="handleSubmitBorrow" 
+    @close="closeBorrowForm"
   />
 </template>

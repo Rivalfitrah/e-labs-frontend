@@ -54,6 +54,10 @@ const handleLogin = async () => {
                     <input v-model="password" type="password" placeholder="Enter your password" id="password" class="mt-2 block w-full px-3 py-3 border rounded-xl">
                 </div>
 
+                <p>
+                    <a href="#" class="text-sm text-blue-600 hover:underline mt-4 block">Forgot Password?</a>
+                </p>
+
                 <div class="mt-6">
                     <button
                     :disabled="loading"
