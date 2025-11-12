@@ -8,11 +8,11 @@ import Swal from 'sweetalert2';
 import type { LoginPayload, UpdatePasswordPayload } from '../types/AuthType';
 
 console.log('runtime config:', useRuntimeConfig())
-export async function Login(payload: LoginPayload) {
+export async function Login(email: string, password: string) {
     try {
         const response = await axios.post(
             `${base_URL}/api/auth/login`,
-            payload,
+            { email, password },
             { withCredentials: true } // <-- penting!
         );
         console.log('Login response:', response.data);

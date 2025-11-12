@@ -4,6 +4,7 @@ import ConfirmModal from '/components/landing/ConfirmationModal.vue';
 import BorrowForm from '/components/landing/BorrowForm.vue';
 import { getAllRuangan, pengajuanRuanganTerjadwal } from '/lib/api/ruangan/ruanganAPI';
 import Swal from 'sweetalert2';
+import TheNavbar from '/components/landing/TheNavbar.vue';
 
 // --- State Halaman ---
 const selectedBuildingName = ref('');
@@ -38,6 +39,7 @@ const fetchAndMapRuangan = async () => {
       let statusText = 'Tersedia';
       if (r.status === 'PENDING') statusText = 'Pending';
       if (r.status === 'DIAJUKAN') statusText = 'Diajukan';
+      if (r.status === 'DIPAKAI') statusText = 'Dipakai';
 
       acc[gedung].push({
         id: r.id?.toString() ?? (r.kode_ruangan ?? Math.random().toString()),
@@ -100,6 +102,7 @@ onMounted(async () => {
     });
   }
 });
+
 
 // --- Functions Halaman ---
 const selectBuilding = (buildingName) => {
@@ -243,6 +246,11 @@ const handleCloseBorrowForm = async () => {
             @click="selectBuilding(building.name)"
             class="bg-white rounded-lg shadow-lg p-10 text-center transition duration-300 transform hover:-translate-y-2 hover:shadow-xl cursor-pointer"
           >
+            <img 
+              :src="building.name.toLowerCase().includes('ca') ? '/gedung-ca.png' : '/gedung-cb.png'" 
+              :alt="`Gedung ${building.name}`" 
+              class="w-full rounded-lg mb-4"
+            >
             <h2 class="text-3xl font-bold text-gray-800">{{ building.name }}</h2>
             <p class="text-gray-600 mt-2">{{ building.rooms.length }} Ruangan Tersedia</p>
           </div>
@@ -267,6 +275,7 @@ const handleCloseBorrowForm = async () => {
             :class="{
               'cursor-pointer': room.status === 'Tersedia' || room.status === 'Pending',
               'cursor-not-allowed opacity-60': room.status === 'Diajukan',
+              'cursor-not-allowed opacity-60': room.status === 'Dipakai',
               'ring-2 ring-yellow-500': room.status === 'Pending'
             }"
           >
