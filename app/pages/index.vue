@@ -76,6 +76,7 @@
       @cancel="hideForm"
       @submit="handleFormSubmit"
     />
+    
   </div>
 </template>
 

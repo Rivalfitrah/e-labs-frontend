@@ -80,43 +80,75 @@ function handleClose() {
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 bg-transparent bg-opacity-50 z-50 flex justify-center items-center">
-    <div class="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full">
-      <h3 class="text-xl font-bold mb-4">{{ title }}</h3>
-      
-      <div class="mb-6">
-        <label for="nim" class="block text-sm font-medium text-gray-700">Masukkan NIM Peminjam</label>
-        <input
-          id="nim"
-          type="text"
-          :value="nimInput"
-          @input="handleNimInput"
-          placeholder="Contoh: J12345678"
-          class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-          :class="{ 
-            'border-red-500 focus:border-red-500 focus:ring-red-500': showError, 
-            'border-gray-300': !showError 
-          }"
-        />
-        <p v-if="nimInput.length === 0" class="mt-1 text-sm text-gray-500">
-          NIM harus diawali 'J' dan diikuti angka.
-        </p>
-      </div>
-
-      <div class="flex justify-end gap-4">
-        <button @click="handleClose" class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">Batal</button>
-        <button 
-          @click="handleConfirm"
-          class="px-4 py-2 rounded-lg text-white transition-colors"
-          :class="{ 
-            'bg-green-500 hover:bg-green-600': !isConfirmDisabled, 
-            'bg-gray-400 cursor-not-allowed': isConfirmDisabled 
-          }"
-          :disabled="isConfirmDisabled"
+  <Transition name="modal">
+    <div 
+      v-if="show" 
+      class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-center"
+    >
+      <Transition name="modal-content">
+        <div 
+          class="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full"
+          v-if="show"
         >
-          Ya, Pinjam
-        </button>
-      </div>
+          <h3 class="text-xl font-bold mb-4">{{ title }}</h3>
+
+          <div class="mb-6">
+            <label for="nim" class="block text-sm font-medium text-gray-700">Masukkan NIM Peminjam</label>
+            <input
+              id="nim"
+              type="text"
+              :value="nimInput"
+              @input="handleNimInput"
+              placeholder="Contoh: J12345678"
+              class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none"
+              :class="{ 
+                'border-red-500 focus:border-red-500 focus:ring-red-500': showError, 
+                'border-gray-300': !showError 
+              }"
+            />
+          </div>
+
+          <div class="flex justify-end gap-4">
+            <button @click="handleClose" class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">
+              Batal
+            </button>
+            <button 
+              @click="handleConfirm"
+              class="px-4 py-2 rounded-lg text-white transition-colors"
+              :class="{ 
+                'bg-green-500 hover:bg-green-600': !isConfirmDisabled, 
+                'bg-gray-400 cursor-not-allowed': isConfirmDisabled 
+              }"
+              :disabled="isConfirmDisabled"
+            >
+              Ya, Pinjam
+            </button>
+          </div>
+        </div>
+      </Transition>
     </div>
-  </div>
+  </Transition>
 </template>
+
+<style scoped>
+/* Background fade */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.25s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+/* Modal content popup */
+.modal-content-enter-active,
+.modal-content-leave-active {
+  transition: all 0.25s ease;
+}
+.modal-content-enter-from,
+.modal-content-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
+}
+</style>
