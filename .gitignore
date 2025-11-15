@@ -24,4 +24,4 @@ logs
 !.env.example
 
 package-lock.json
-package-lock.yaml
+pnpm-lock.yaml
