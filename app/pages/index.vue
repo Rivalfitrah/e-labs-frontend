@@ -1,13 +1,16 @@
 <script setup>
   import { ref, onMounted } from "vue";
-  import TheNavbar from "@/components/landing/TheNavbar.vue";
   import BorrowForm from "@/components/landing/BorrowForm.vue";
   import HeroSection from "~/components/section/HeroSection.vue";
   import WhyUse from "~/components/section/WhyUse.vue";
   import CaraMenggunakan from "~/components/section/CaraMenggunakan.vue";
   import GedungSection from "~/components/section/GedungSection.vue";
   import Schedule from "~/components/section/Schedule.vue";
-  import Footer from "~/components/section/Footer.vue";
+
+
+  definePageMeta({
+    layout: "landing-page",
+  })
 
   const isFormVisible = ref(false);
 
@@ -53,8 +56,6 @@
 
 <template>
   <div class="bg-gradient-to-b from-white to-gray-50 min-h-screen font-sans">
-    <TheNavbar />
-
     <!-- Hero Section -->
     <HeroSection />
     <!-- Why e-Labs+ Section -->
@@ -66,17 +67,13 @@
 
     <!-- Schedule Section -->
     <Schedule />
-
-    <!-- Footer -->
-    <Footer />
-
     <!-- Form Modal (if visible) -->
     <BorrowForm
       v-if="isFormVisible"
       @cancel="hideForm"
       @submit="handleFormSubmit"
     />
-    
+
   </div>
 </template>
 

@@ -1,4 +1,5 @@
-<script>
+<script setup>
+
 definePageMeta({
   layout: 'dashboard'
 })
@@ -6,5 +7,7 @@ definePageMeta({
 </script>
 
 <template>
-  dashboard
+  <div>
+    dashboard
+  </div>
 </template>
