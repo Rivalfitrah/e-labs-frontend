@@ -597,7 +597,7 @@
             </td>
             <td class="px-5 py-3 align-middle">
               <div
-                class="w-12 h-12 overflow-hidden border border-gray-300 flex-shrink-0 mx-auto flex items-center justify-center"
+                class="w-12 h-12 overflow-hidden border border-gray-300 shrink-0 mx-auto flex items-center justify-center"
               >
                 <img
                   v-if="qrLoadingIds.includes(data.id)"
