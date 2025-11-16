@@ -30,6 +30,7 @@
 
   definePageMeta({
     layout: "dashboard",
+    middleware: "middleware",
   });
 
   // State for data

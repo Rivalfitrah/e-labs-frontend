@@ -41,37 +41,33 @@ export async function Logout(){
 
 export async function getProfile() {
   try {
+    const token = useCookie("token").value;
+
+    if (!token) {
+      console.warn("Tidak ada token → pengguna belum login.");
+      return { noToken: true };
+    }
+
     const response = await axios.get(`${base_URL}/api/auth/me`, {
       withCredentials: true,
     });
-    console.log("Profile response:", response.data);
+
     return response.data;
+
   } catch (error: any) {
-    console.error("Error fetching profile:", error);
+    const status = error.response?.status;
 
-    // ✅ Jika token tidak valid / expired
-    if (error.response && [401, 403].includes(error.response.status)) {
-      console.warn("Token tidak valid atau sudah expired. Redirect ke login...");
-
-      // 🔥 Tampilkan toast dulu (di kanan atas)
-      await Swal.fire({
-        toast: true,
-        position: "top-end", // pojok kanan atas
-        icon: "warning",
-        title: "Sesi Anda telah berakhir",
-        text: "Silakan login kembali untuk melanjutkan.",
-        showConfirmButton: false,
-        timer: 2500,
-        timerProgressBar: true,
-      });
-
-      // 🔄 Setelah toast selesai (2.5 detik), redirect ke login
-      await navigateTo("/auth/login");
+    // token invalid / expired
+    if ([401, 403].includes(status)) {
+      return { expired: true };
     }
 
     throw error;
   }
 }
+
+
+
 
 export async function UpdatePassword(payload: UpdatePasswordPayload) {
     try {

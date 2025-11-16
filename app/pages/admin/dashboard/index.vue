@@ -5,6 +5,7 @@ import PeminjamanNew from "~/components/ui/dashboard/PeminjamanNew.vue";
 
   definePageMeta({
     layout: "dashboard",
+    middleware: "middleware", // Tambahkan middleware untuk proteksi
   });
 </script>
 

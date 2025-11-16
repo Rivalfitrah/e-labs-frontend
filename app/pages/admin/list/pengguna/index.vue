@@ -15,7 +15,8 @@ import UiPagination from '~/components/ui/pagination.vue'
 import AddUserModal from '~/components/ui/AddUserModal.vue'
 
 definePageMeta({
-  layout: 'dashboard'
+  layout: 'dashboard',
+  middleware: 'middleware'
 });
 
 // --- STATE MANAGEMENT ---

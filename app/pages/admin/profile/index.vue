@@ -5,6 +5,7 @@ import { ref } from "vue";
   import { onMounted } from "vue";
   definePageMeta({
     layout: "dashboard",
+    middleware: "middleware",
   });
 
   const user = ref(null);

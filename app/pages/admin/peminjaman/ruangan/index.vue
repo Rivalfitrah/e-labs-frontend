@@ -7,7 +7,8 @@ import { onMounted, ref, computed } from 'vue'
 import Swal from 'sweetalert2'
 import { getRuanganID } from '~/lib/api/ruangan'
 definePageMeta({
-  layout: 'dashboard'
+  layout: 'dashboard',
+  middleware: 'middleware'
 })
 
 // --- State for Data (Pengajuan) ---

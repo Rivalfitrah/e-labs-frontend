@@ -13,10 +13,9 @@ import { getProdiList } from '~/lib/api/pengguna';
 // import UiInfoBox from '~/components/ui/infoBox.vue'; 
 
 definePageMeta({
-    layout: 'dashboard'
-});
-
-// --- STATE MANAGEMENT ---
+  layout: 'dashboard',
+  middleware: 'middleware'
+});// --- STATE MANAGEMENT ---
 const matakuliahList = ref([]);
 const isLoading = ref(true);
 const search = ref('');
