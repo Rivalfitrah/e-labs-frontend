@@ -522,7 +522,7 @@
       <input
         type="text"
         v-model="search"
-        class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
+        class="pl-10 pr-4 py-2 w-full border bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
         placeholder="Cari Nama Ruangan, Kode, atau Gedung..."
       />
     </div>

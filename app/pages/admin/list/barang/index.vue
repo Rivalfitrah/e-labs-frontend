@@ -14,6 +14,7 @@
     Clock,
     Wrench,
     XCircle,
+    X,
   } from "lucide-vue-next";
   // Perhatian: Saya menambahkan createBarang, asumsikan fungsi ini ada di api.js
   import {
@@ -126,14 +127,24 @@
     try {
       const barangData = await listBarang();
       barang.value = barangData;
+      console.log('Total barang fetched:', barangData.length);
 
       // Fetch dashboard stats dengan error handling
       try {
         const statsData = await getDashboardBarang();
-        // Process barang stats
+        
+        // Process barang stats - sesuaikan dengan struktur response API
         if (statsData?.data?.overview) {
           barangStats.value = statsData.data.overview;
+        } else if (statsData?.data) {
+          barangStats.value = statsData.data;
+        } else if (statsData?.overview) {
+          barangStats.value = statsData.overview;
+        } else {
+          // Jika struktur berbeda, assign langsung
+          barangStats.value = statsData;
         }
+        console.log('Final barangStats value:', barangStats.value);
       } catch (statsError) {
         console.warn(
           "Dashboard endpoint not available, calculating stats from data:",
@@ -142,21 +153,27 @@
         // Hitung statistik dari data yang ada sebagai fallback
         const total = barangData.length;
         const tersedia = barangData.filter(
-          (b) => b.status?.toLowerCase() === "tersedia"
+          (b) => b.status === "TERSEDIA" || b.status?.toLowerCase() === "tersedia"
         ).length;
         const dipinjam = barangData.filter(
-          (b) => b.status?.toLowerCase() === "dipinjam"
+          (b) => b.status === "DIPINJAM" || b.status?.toLowerCase() === "dipinjam"
         ).length;
         const rusak = barangData.filter(
           (b) =>
+            b.status === "RUSAK" || 
             b.status?.toLowerCase() === "rusak" ||
+            b.kondisi === "RUSAK_BERAT" ||
+            b.kondisi === "RUSAK_RINGAN" ||
             b.kondisi?.toLowerCase().includes("rusak")
         ).length;
         const tidakTersedia = barangData.filter(
           (b) =>
+            b.status === "TIDAK_TERSEDIA" ||
             b.status?.toLowerCase() === "tidak tersedia" ||
             b.status?.toLowerCase() === "tidak_tersedia"
         ).length;
+
+        console.log('Calculated stats from data:', { total, tersedia, dipinjam, rusak, tidakTersedia });
 
         barangStats.value = {
           total,
@@ -539,6 +556,24 @@
     if (newFileInput.value) newFileInput.value.click();
   }
 
+  function triggerFileInput() {
+    if (fileInput.value) fileInput.value.click();
+  }
+
+  function removeNewImageFile() {
+    newImageFile.value = null;
+    if (newFileInput.value) {
+      newFileInput.value.value = '';
+    }
+  }
+
+  function removeImageFile() {
+    imageFile.value = null;
+    if (fileInput.value) {
+      fileInput.value.value = '';
+    }
+  }
+
   async function handleDelete(id, nama_barang) {
     try {
       await deleteBarang(id);
@@ -699,7 +734,7 @@
         <input
           type="text"
           v-model="search"
-          class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
+          class="pl-10 pr-4 py-2 w-full border bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
           placeholder="Cari Nama Barang, Kode, atau Merek..."
         />
       </div>
@@ -1325,22 +1360,67 @@
         </button>
 
         <form @submit.prevent="handleImageUpload" class="space-y-4">
-          <!-- Drag and Drop Area -->
-          <label
-            for="file_input"
-            @dragover.prevent="handleDragOver"
-            @dragleave="handleDragLeave"
-            @drop="handleDrop"
-            @click="triggerNewFileInput"
-            class="flex flex-col items-center justify-center w-full p-4 sm:p-6 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-300"
-          >
-            <Upload class="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mb-3" />
-            <p class="mb-2 text-sm text-gray-500 text-center">
-              <span class="font-semibold">Klik untuk memilih</span> atau seret
-              dan lepas gambar di sini
-            </p>
-            <p class="text-xs text-gray-500">PNG, JPG, JPEG, WEBP (MAX. 5MB)</p>
-          </label>
+          <!-- Upload Area dengan Preview Terintegrasi -->
+          <div class="relative">
+            <div
+              class="flex items-center gap-4 w-full p-4 border-2 border-gray-300 border-dashed rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-300"
+              :class="{ 'cursor-pointer': !imageFile }"
+              @click="!imageFile && triggerFileInput()">
+              
+              <!-- Preview Image atau Upload Icon -->
+              <div v-if="imageFile" class="relative shrink-0">
+                <img :src="imagePreviewUrl" alt="Pratinjau Gambar"
+                  class="w-24 h-24 object-cover rounded-lg border-2 border-gray-300 shadow-sm" />
+              </div>
+              <div v-else-if="selectedBarang.foto_barang_url" class="relative shrink-0">
+                <img :src="imagePreviewUrl" alt="Gambar Saat Ini"
+                  class="w-24 h-24 object-cover rounded-lg border-2 border-gray-300 shadow-sm" />
+              </div>
+              <div v-else class="shrink-0">
+                <div class="w-24 h-24 flex items-center justify-center bg-gray-100 rounded-lg border-2 border-gray-300">
+                  <Upload class="w-10 h-10 text-gray-400" />
+                </div>
+              </div>
+
+              <!-- Text Info -->
+              <div class="flex-1 min-w-0">
+                <template v-if="imageFile">
+                  <p class="text-sm font-medium text-gray-700 truncate">{{ imageFile.name }}</p>
+                  <p class="text-xs text-gray-500 mt-1">{{ (imageFile.size / 1024).toFixed(2) }} KB</p>
+                  <button
+                    type="button"
+                    @click.stop="triggerFileInput()"
+                    class="text-xs text-blue-600 hover:text-blue-700 mt-1 underline">
+                    Ganti gambar
+                  </button>
+                </template>
+                <template v-else-if="selectedBarang.foto_barang_url">
+                  <p class="text-sm font-medium text-gray-700">Gambar saat ini</p>
+                  <button
+                    type="button"
+                    @click.stop="triggerFileInput()"
+                    class="text-xs text-blue-600 hover:text-blue-700 mt-1 underline">
+                    Pilih gambar baru
+                  </button>
+                </template>
+                <template v-else>
+                  <p class="text-sm text-gray-600 font-medium">Klik atau seret gambar ke sini</p>
+                  <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG, WEBP (Maks. 5MB)</p>
+                </template>
+              </div>
+
+              <!-- Tombol Hapus -->
+              <button
+                v-if="imageFile"
+                type="button"
+                @click.stop="removeImageFile"
+                class="shrink-0 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors duration-200 shadow-md hover:shadow-lg"
+                title="Hapus gambar">
+                <X class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          
           <input
             id="file_input"
             type="file"
@@ -1349,31 +1429,6 @@
             accept="image/*"
             ref="fileInput"
           />
-
-          <!-- Image Preview -->
-
-          <div
-            v-if="imageFile || selectedBarang.foto_barang_url"
-            class="mt-4 flex flex-col items-center"
-          >
-            <p class="text-sm font-medium text-gray-700 mb-2">
-              Pratinjau Gambar:
-            </p>
-            <img
-              :src="imagePreviewUrl"
-              alt="Pratinjau Gambar"
-              class="max-w-full max-h-48 object-contain border border-gray-200 rounded-lg shadow-sm"
-            />
-            <p v-if="imageFile" class="mt-2 text-sm text-gray-600">
-              {{ imageFile.name }} ({{
-                (imageFile.size / 1024 / 1024).toFixed(2)
-              }}
-              MB)
-            </p>
-            <p v-else class="mt-2 text-sm text-gray-600">
-              Gambar yang sudah ada
-            </p>
-          </div>
 
           <!-- Action Buttons for Image Modal -->
 
@@ -1590,24 +1645,60 @@
               required
             />
           </div>
-          <!-- File Upload Area -->
+          <!-- File Upload Area dengan Preview Terintegrasi -->
           <div class="mt-2">
-            <p class="text-sm font-medium text-gray-700 mb-1 pt-2">
+            <p class="text-sm font-medium text-gray-700 mb-2 pt-2">
               Foto Barang (Opsional)
             </p>
-            <label
-              for="new_file_input"
-              @dragover.prevent="handleDragOver"
-              @dragleave="handleDragLeave"
-              @drop="handleNewDrop"
-              @click="triggerNewFileInput"
-              class="flex flex-col items-center justify-center w-full p-4 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-300"
-            >
-              <Upload class="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mb-1" />
-              <p class="text-sm text-gray-500 text-center">
-                Seret/Pilih Gambar
-              </p>
-            </label>
+            
+            <!-- Container dengan preview terintegrasi -->
+            <div class="relative">
+              <div
+                class="flex items-center gap-4 w-full p-4 border-2 border-gray-300 border-dashed rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-300"
+                :class="{ 'cursor-pointer': !newImageFile }"
+                @click="!newImageFile && triggerNewFileInput()">
+                
+                <!-- Preview Image atau Upload Icon -->
+                <div v-if="newImageFile" class="relative shrink-0">
+                  <img :src="newImagePreviewUrl" alt="Pratinjau Barang"
+                    class="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 shadow-sm" />
+                </div>
+                <div v-else class="shrink-0">
+                  <div class="w-20 h-20 flex items-center justify-center bg-gray-100 rounded-lg border-2 border-gray-300">
+                    <Upload class="w-8 h-8 text-gray-400" />
+                  </div>
+                </div>
+
+                <!-- Text Info -->
+                <div class="flex-1 min-w-0">
+                  <template v-if="newImageFile">
+                    <p class="text-sm font-medium text-gray-700 truncate">{{ newImageFile.name }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ (newImageFile.size / 1024).toFixed(2) }} KB</p>
+                    <button
+                      type="button"
+                      @click.stop="triggerNewFileInput()"
+                      class="text-xs text-primary hover:text-primary-dark mt-1 underline">
+                      Ganti gambar
+                    </button>
+                  </template>
+                  <template v-else>
+                    <p class="text-sm text-gray-600 font-medium">Klik atau seret gambar ke sini</p>
+                    <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG (Maks. 5MB)</p>
+                  </template>
+                </div>
+
+                <!-- Tombol Hapus -->
+                <button
+                  v-if="newImageFile"
+                  type="button"
+                  @click.stop="removeNewImageFile"
+                  class="shrink-0 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors duration-200 shadow-md hover:shadow-lg"
+                  title="Hapus gambar">
+                  <X class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            
             <input
               id="new_file_input"
               type="file"
@@ -1616,19 +1707,6 @@
               accept="image/*"
               ref="newFileInput"
             />
-
-            <!-- Image Preview Tambah -->
-            <div v-if="newImageFile" class="mt-2 flex flex-col items-center">
-              <p class="text-sm font-medium text-gray-700 mb-2">
-                Pratinjau Gambar:
-              </p>
-              <img
-                :src="newImagePreviewUrl"
-                alt="Pratinjau Gambar Baru"
-                class="max-w-full max-h-32 object-contain border border-gray-200 rounded-lg shadow-sm"
-              />
-              <p class="mt-1 text-sm text-gray-600">{{ newImageFile.name }}</p>
-            </div>
           </div>
 
           <!-- Action Buttons -->

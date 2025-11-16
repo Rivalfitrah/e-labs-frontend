@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import Swal from 'sweetalert2';
-import { Search, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-vue-next'; 
+import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, BookOpen, GraduationCap } from 'lucide-vue-next'; 
 
 // Import API Mata Kuliah dan API Prodi (Asumsi path ini sudah benar di project Anda)
 import {
@@ -9,8 +9,8 @@ import {
 } from '~/lib/api/pengguna';
 import { getProdiList } from '~/lib/api/pengguna';
 
-// Import komponen dasar (UiInfoBox dihilangkan dari template karena tidak digunakan)
-// import UiInfoBox from '~/components/ui/infoBox.vue'; 
+// Import komponen infobox
+import UiInfoBox from '~/components/ui/infoBox.vue'; 
 
 definePageMeta({
     layout: 'dashboard'
@@ -22,6 +22,10 @@ const isLoading = ref(true);
 const search = ref('');
 const notification = ref({ show: false, message: '', type: 'success' });
 const getProdiOptions = ref([]);
+const matkulStats = ref({
+    totalProdi: 0,
+    totalSemester: 0
+});
 
 // Modal State
 const isEditModalOpen = ref(false);
@@ -113,6 +117,22 @@ function goToPage(page) {
 function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
 
+// --- STATISTICS CALCULATION ---
+function calculateStats(matkulData, prodiData) {
+    // Hitung jumlah prodi unik dari data mata kuliah
+    const uniqueProdiIds = new Set(matkulData.map(m => m.prodi_id || m.prodi?.id).filter(id => id !== null && id !== undefined));
+    
+    // Hitung jumlah semester unik dari data mata kuliah
+    const uniqueSemesters = new Set(matkulData.map(m => m.semester).filter(s => s !== null && s !== undefined));
+    
+    matkulStats.value = {
+        totalProdi: uniqueProdiIds.size,
+        totalSemester: uniqueSemesters.size
+    };
+    
+    console.log('Matkul stats calculated:', matkulStats.value);
+}
+
 // --- DATA FETCHING ---
 async function fetchInitialData() {
     isLoading.value = true;
@@ -130,6 +150,9 @@ async function fetchInitialData() {
             value: prodi.id,
             label: prodi.nama_prodi
         }));
+
+        // Hitung statistik
+        calculateStats(actualMatkulData, prodiData);
 
     } catch (error) {
         console.error('❌ Failed to fetch initial data:', error);
@@ -328,11 +351,42 @@ async function handleDelete(id, namaMatkul) {
         </div>
     </transition>
 
+    <!-- Statistik Mata Kuliah -->
+    <section class="mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <UiInfoBox
+                type="total"
+                class="hover:scale-105 transition-transform duration-200"
+            >
+                <template #title>
+                    <span class="flex items-center gap-2">
+                        <GraduationCap class="w-4 h-4 text-primary" />
+                        Total Prodi
+                    </span>
+                </template>
+                <span class="text-2xl font-bold text-primary">{{ matkulStats?.totalProdi || 0 }}</span>
+            </UiInfoBox>
+
+            <UiInfoBox
+                type="tersedia"
+                class="hover:scale-105 transition-transform duration-200"
+            >
+                <template #title>
+                    <span class="flex items-center gap-2">
+                        <BookOpen class="w-4 h-4 text-green-600" />
+                        Total Semester
+                    </span>
+                </template>
+                <span class="text-2xl font-bold text-green-600">{{ matkulStats?.totalSemester || 0 }}</span>
+            </UiInfoBox>
+        </div>
+    </section>
+
     <div class="flex flex-col md:flex-row md:items-center gap-2 mb-4">
         <div class="flex relative w-full">
             <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input type="text" v-model="search"
-                class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
+                class="pl-10 pr-4 py-2 w-full border bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
                 placeholder="Cari Mata Kuliah, Prodi, atau Semester..." />
         </div>
         <button @click="openAddModal"
