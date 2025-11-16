@@ -75,40 +75,6 @@ const paginatedMatakuliah = computed(() => {
     return filteredMatakuliah.value.slice(start, end);
 });
 
-// LOGIKA PAGINATION DENGAN ELIPSIS (DARI INPUT USER)
-const paginationPages = computed(() => {
-    const pages = [];
-    const maxPagesToShow = 5;
-    const total = totalPages.value;
-    const current = currentPage.value;
-
-    if (total <= maxPagesToShow) {
-        for (let i = 1; i <= total; i++) pages.push(i);
-    } else {
-        pages.push(1);
-        if (current > 3) pages.push('...');
-        
-        let start = Math.max(2, current - 1);
-        let end = Math.min(total - 1, current + 1);
-
-        if (current <= 3) end = 4;
-        if (current >= total - 2) start = total - 3;
-        
-        // Memastikan range tidak tumpang tindih
-        start = Math.max(start, 2);
-        end = Math.min(end, total - 1);
-
-        for (let i = start; i <= end; i++) {
-            if (i > 1 && i < total) pages.push(i);
-        }
-
-        if (current < total - 2) pages.push('...');
-        pages.push(total);
-    }
-    // Filter duplikat '...'
-    return pages.filter((page, index, self) => page !== '...' || self[index - 1] !== '...');
-});
-
 function goToPage(page) {
     if (page >= 1 && page <= totalPages.value) {
         currentPage.value = page;
@@ -522,51 +488,18 @@ async function handleDelete(id, namaMatkul) {
         </div>
 
 
-        <div v-if="totalPages > 1"
-            class="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
-            <span class="text-sm text-gray-700">
-                Menampilkan
-                <span class="font-semibold">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
-                sampai
-                <span class="font-semibold">{{ Math.min(currentPage * itemsPerPage, filteredMatakuliah.length) }}</span>
-                dari
-                <span class="font-semibold">{{ filteredMatakuliah.length }}</span>
-                Mata Kuliah
-            </span>
-            <nav class="flex items-center space-x-1" aria-label="Pagination">
-                <button @click="goToPage(1)" :disabled="currentPage === 1"
-                    :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
-                    class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition text-sm">
-                    &laquo;
-                </button>
-                <button @click="prevPage" :disabled="currentPage === 1"
-                    :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
-                    class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-                    <ChevronLeft class="w-5 h-5" />
-                </button>
-                <div class="flex space-x-1">
-                    <template v-for="(page, idx) in paginationPages" :key="idx">
-                        <button v-if="page !== '...'" @click="goToPage(page)" :class="{
-                            'bg-primary text-white': page === currentPage,
-                            'bg-white text-gray-700 hover:bg-gray-100': page !== currentPage
-                        }" class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition">
-                            {{ page }}
-                        </button>
-                        <span v-else class="px-3 py-2 text-gray-400 select-none text-sm">...</span>
-                    </template>
-                </div>
-                <button @click="nextPage" :disabled="currentPage === totalPages"
-                    :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
-                    class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-                    <ChevronRight class="w-5 h-5" />
-                </button>
-                <button @click="goToPage(totalPages)" :disabled="currentPage === totalPages"
-                    :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
-                    class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition text-sm">
-                    &raquo;
-                </button>
-            </nav>
-        </div>
+        <!-- Pagination Component -->
+        <UiPagination
+            v-if="totalPages > 1"
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :total-items="filteredMatakuliah.length"
+            :items-per-page="itemsPerPage"
+            item-label="mata kuliah"
+            @previous="prevPage"
+            @next="nextPage"
+            @go-to-page="goToPage"
+        />
         </div>
 
 
