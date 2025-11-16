@@ -83,3 +83,32 @@ export async function UpdatePassword(payload: UpdatePasswordPayload) {
         throw error;
     }
 }
+
+export async function ForgotPassword(email: string) {
+    try {
+        const response = await axios.post(
+            `${base_URL}/api/auth/request-password-reset`,
+            { email },
+            { withCredentials: true } 
+        );
+        console.log('Forgot password response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error during forgot password:', error);
+        throw error;
+    }
+}
+
+export async function ResetPassword(email: string, otp: string, newPassword: string, confirmPassword: string) {
+    try {
+        const response = await axios.post(
+            `${base_URL}/api/auth/reset-password`,
+            { email, token: otp, newPassword, confirmPassword },
+            { withCredentials: true }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error during OTP verification:', error);
+        throw error;
+    }
+}
