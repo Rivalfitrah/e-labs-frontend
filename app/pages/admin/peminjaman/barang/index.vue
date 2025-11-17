@@ -1,6 +1,7 @@
 <script setup>
 definePageMeta({
-  layout: 'dashboard'
+  layout: 'dashboard',
+  middleware: 'middleware'
 })
 import { Search } from 'lucide-vue-next'
 import UiInfoBox from '~/components/ui/infoBox.vue'

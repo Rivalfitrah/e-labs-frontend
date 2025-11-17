@@ -3,6 +3,7 @@ import axios from 'axios'
 
 // filepath: d:\Fahri\codebase\projects ssmt5\backend-express\e-labs-frontend\app\lib\api.js
 import { base_URL } from '../base'
+import type { CreateBarangPayload, UpdateBarangPayload } from '../types/BarangType'
 
 export async function listBarang() {
     try {
@@ -18,7 +19,7 @@ export async function listBarang() {
     }
 }
 
-export async function updateBarang(id: string, formData: any) {
+export async function updateBarang(id: string, formData: UpdateBarangPayload) {
     // Token ada di httpOnly cookies, tidak perlu set Authorization header manual
     try {
         const response = await axios.patch(
@@ -57,7 +58,7 @@ export async function deleteBarang(id: string) {
     }
 }
 
-export async function createBarang(formData: any) {
+export async function createBarang(formData: CreateBarangPayload) {
     // Token ada di httpOnly cookies, tidak perlu set Authorization header manual
     try {
         const response = await axios.post(

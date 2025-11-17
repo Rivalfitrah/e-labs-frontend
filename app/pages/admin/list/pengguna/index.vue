@@ -12,9 +12,11 @@ import { storage_URL } from '~/lib/base.js'
 
 import UiInfoBox from '~/components/ui/infoBox.vue'
 import UiPagination from '~/components/ui/pagination.vue'
+import AddUserModal from '~/components/ui/AddUserModal.vue'
 
 definePageMeta({
-  layout: 'dashboard'
+  layout: 'dashboard',
+  middleware: 'middleware'
 });
 
 // --- STATE MANAGEMENT ---
@@ -47,12 +49,6 @@ const initialSelectedUser = {
 
 const selectedUser = ref({ ...initialSelectedUser });
 const profileFile = ref(null);
-const newProfileFile = ref(null);
-
-const newUserData = ref({
-  nama: '', email: '', password: '', uniqueId: '', roleId: 1, isBlocked: false,
-  NIM: null, NIP: null, semester: null, prodiId: null,
-});
 
 // --- UTILITY FUNCTIONS ---
 
@@ -231,11 +227,6 @@ function closeEditModal() {
 }
 
 function openAddModal() {
-  newUserData.value = { // Reset form
-    nama: '', email: '', password: '', uniqueId: '', roleId: 1, isBlocked: false,
-    NIM: null, NIP: null, semester: null, prodiId: null,
-  };
-  newProfileFile.value = null;
   isAddModalOpen.value = true;
 }
 
@@ -265,15 +256,6 @@ function handleProfileFileChange(event) {
   }
 }
 
-function handleNewProfileFileChange(event) {
-  const file = event.target.files?.[0];
-  if (file && validateFile(file)) {
-    newProfileFile.value = file;
-  } else {
-    newProfileFile.value = null;
-  }
-}
-
 const profilePreviewUrl = computed(() => {
   if (profileFile.value) {
     return URL.createObjectURL(profileFile.value);
@@ -281,19 +263,10 @@ const profilePreviewUrl = computed(() => {
   return getProfileUrl(selectedUser.value.profil);
 });
 
-const newProfilePreviewUrl = computed(() => {
-  if (newProfileFile.value) {
-    return URL.createObjectURL(newProfileFile.value);
-  }
-  return 'https://placehold.co/150x150/f1f1f1/333333?text=N/A';
-});
-
 // --- FIELD VISIBILITY COMPUTED PROPERTIES ---
 
 const isSelectedUserMahasiswa = computed(() => selectedUser.value.roleId === 1);
 const isSelectedUserDosenPengelola = computed(() => selectedUser.value.roleId !== 1 && selectedUser.value.roleId !== undefined);
-const isNewUserMahasiswa = computed(() => newUserData.value.roleId === 1);
-const isNewUserDosenPengelola = computed(() => newUserData.value.roleId !== 1);
 
 
 // --- CRUD HANDLERS ---
@@ -386,9 +359,9 @@ async function handleProfileUpload() {
 }
 
 
-async function handleAddSubmit() {
+async function handleAddSubmit({ userData, profileFile }) {
   // Validasi dasar
-  if (!newUserData.value.nama || !newUserData.value.email || !newUserData.value.password || !newUserData.value.uniqueId) {
+  if (!userData.nama || !userData.email || !userData.password || !userData.uniqueId) {
     showNotification('Nama, Email, Password, dan ID Unik wajib diisi.', 'error');
     return;
   }
@@ -396,17 +369,17 @@ async function handleAddSubmit() {
   const formData = new FormData();
 
   // Append fields
-  for (const key in newUserData.value) {
+  for (const key in userData) {
     // Cek apakah key adalah 'semester' atau 'prodiId' dan nilainya 0 atau null, jika iya, lewati
-    if ((key === 'semester' || key === 'prodiId') && (newUserData.value[key] === null || newUserData.value[key] === 0)) {
+    if ((key === 'semester' || key === 'prodiId') && (userData[key] === null || userData[key] === 0)) {
       continue;
     }
-    formData.append(key, newUserData.value[key] ? String(newUserData.value[key]) : '');
+    formData.append(key, userData[key] ? String(userData[key]) : '');
   }
 
   // Append image file if present
-  if (newProfileFile.value) {
-    formData.append('foto_profile', newProfileFile.value);
+  if (profileFile) {
+    formData.append('foto_profile', profileFile);
   }
 
   try {
@@ -432,7 +405,7 @@ async function handleAddSubmit() {
 
     Swal.fire({
       icon: 'success', title: 'Berhasil!',
-      text: `Pengguna "${newUserData.value.nama}" berhasil ditambahkan!`,
+      text: `Pengguna "${userData.nama}" berhasil ditambahkan!`,
       timer: 2000, showConfirmButton: false
     });
 
@@ -599,20 +572,21 @@ const userStats = computed(() => dashboardStats.value)
 
 
 <template>
-  <!-- Toast Notification -->
-  <transition enter-active-class="transition ease-out duration-300 transform"
-    enter-from-class="opacity-0 translate-y-full" enter-to-class="opacity-100 translate-y-0"
-    leave-active-class="transition ease-in duration-300 transform" leave-from-class="opacity-100 translate-y-0"
-    leave-to-class="opacity-0 translate-y-full">
-    <div v-if="notification.show" :class="{
-      'bg-green-500': notification.type === 'success',
-      'bg-red-500': notification.type === 'error'
-    }" class="fixed bottom-4 right-4 text-white p-4 rounded-lg shadow-xl z-50 transition-all duration-300">
-      {{ notification.message }}
-    </div>
-  </transition>
+  <div>
+    <!-- Toast Notification -->
+    <transition enter-active-class="transition ease-out duration-300 transform"
+      enter-from-class="opacity-0 translate-y-full" enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition ease-in duration-300 transform" leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-full">
+      <div v-if="notification.show" :class="{
+        'bg-green-500': notification.type === 'success',
+        'bg-red-500': notification.type === 'error'
+      }" class="fixed bottom-4 right-4 text-white p-4 rounded-lg shadow-xl z-50 transition-all duration-300">
+        {{ notification.message }}
+      </div>
+    </transition>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <UiInfoBox type="mahasiswa" class="hover:scale-105 transition-transform duration-200">
             <template #title>
               <span class="flex items-center gap-2">
@@ -690,8 +664,8 @@ const userStats = computed(() => dashboardStats.value)
 
 
   <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
-    <!-- Wrapper untuk tabel dengan overflow horizontal -->
-    <div class="overflow-x-auto">
+    <!-- Desktop Table - Hidden on Mobile -->
+    <div class="hidden md:block overflow-x-auto">
       <table class="w-full table-fixed border-separate border-spacing-0 min-w-max">
         <thead>
           <tr class="bg-primary text-white text-center text-xs uppercase tracking-wider">
@@ -712,28 +686,28 @@ const userStats = computed(() => dashboardStats.value)
             class="hover:bg-gray-50 transition border-t border-gray-100">
             <td class="px-3 py-3 font-mono align-middle">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
             <td class="px-3 py-3 align-middle">
-              <div class="w-8 h-8 rounded-full overflow-hidden border border-gray-300 flex-shrink-0 mx-auto">
+              <div class="w-8 h-8 rounded-full overflow-hidden border border-gray-300 shrink-0 mx-auto">
                 <img :src="getProfileUrl(`${storage_URL}/uploads/${data.profilUrl}`)" alt="Foto Profil" class="w-full h-full object-cover"
                   onerror="this.onerror=null;this.src='https://placehold.co/32x32/f1f1f1/333333?text=N/A';" />
               </div>
             </td>
             <td class="px-3 py-3 text-left align-middle font-semibold">
               <div class="w-full">
-                <p class="break-words text-xs font-semibold leading-tight">{{ data.nama }}</p>
-                <p class="break-words text-xs text-gray-500 font-normal leading-tight mt-1">{{ data.email }}</p>
+                <p class="wrap-break-word text-xs font-semibold leading-tight">{{ data.nama }}</p>
+                <p class="wrap-break-word text-xs text-gray-500 font-normal leading-tight mt-1">{{ data.email }}</p>
               </div>
             </td>
             <td class="px-3 py-3 font-mono text-gray-500 align-middle">
-              <div class="break-words text-xs">{{ data.NIM || data.NIP || data.uniqueId }}</div>
+              <div class="wrap-break-word text-xs">{{ data.NIM || data.NIP || data.uniqueId }}</div>
             </td>
             <td class="px-3 py-3 align-middle">
-              <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium break-words">
+              <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium wrap-break-word">
                 {{ data.role ? getRoleLabel(data.role.nama_role) : 'N/A' }}
               </span>
             </td>
             <td class="px-3 py-3 align-middle">
               <span v-if="data.prodiId"
-                class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full text-xs font-medium break-words">
+                class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full text-xs font-medium wrap-break-word">
                 {{getProdiOptions.find(p => p.value === data.prodiId)?.label || 'N/A'}}
               </span>
               <span v-else class="text-gray-400 text-xs">N/A</span>
@@ -797,8 +771,134 @@ const userStats = computed(() => dashboardStats.value)
       </table>
     </div>
 
+    <!-- Mobile Card View - Visible on Mobile Only -->
+    <div class="md:hidden divide-y divide-gray-200">
+      <div
+        v-for="(data, index) in paginatedUsers"
+        :key="'mobile-' + data.id"
+        class="p-4 hover:bg-gray-50 transition"
+      >
+        <div class="flex items-start gap-3">
+          <!-- Foto & No -->
+          <div class="shrink-0">
+            <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
+              <img :src="getProfileUrl(`${storage_URL}/uploads/${data.profilUrl}`)" alt="Foto Profil"
+                class="w-full h-full object-cover"
+                onerror="this.onerror=null;this.src='https://placehold.co/64x64/f1f1f1/333333?text=N/A';" />
+            </div>
+            <div class="text-center mt-1 text-xs text-gray-500 font-mono">
+              #{{ (currentPage - 1) * itemsPerPage + index + 1 }}
+            </div>
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-gray-900 text-sm mb-1">{{ data.nama }}</h3>
+            <p class="text-xs text-gray-500 mb-2 truncate">{{ data.email }}</p>
+
+            <div class="space-y-1 text-xs text-gray-600">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-24">ID/NIM/NIP:</span>
+                <span class="font-mono">{{ data.NIM || data.NIP || data.uniqueId }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-24">Role:</span>
+                <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                  {{ data.role ? getRoleLabel(data.role.nama_role) : 'N/A' }}
+                </span>
+              </div>
+              <div v-if="data.prodiId" class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-24">Prodi:</span>
+                <span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                  {{getProdiOptions.find(p => p.value === data.prodiId)?.label || 'N/A'}}
+                </span>
+              </div>
+              <div v-if="data.semester" class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-24">Semester:</span>
+                <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                  {{ data.semester }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-24">Peringatan:</span>
+                <span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                  {{ data.totalPeringatan ?? 0 }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-500 w-24">Status:</span>
+                <span :class="getStatusClass(data.isBlocked)"
+                  class="px-2 py-0.5 rounded-full text-xs font-medium">
+                  {{ data.isBlocked ? 'BLOCKED' : 'AKTIF' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-2 mt-3">
+              <button
+                @click="openProfileModal(data)"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1"
+              >
+                <ImageIcon class="w-3.5 h-3.5" />
+                <span>Foto</span>
+              </button>
+              <button
+                @click="handleToggleBlock(data)"
+                :class="{
+                  'bg-green-600 hover:bg-green-700': data.isBlocked,
+                  'bg-red-500 hover:bg-red-600': !data.isBlocked && (data.totalPeringatan ?? 0) >= 3,
+                  'bg-red-800 hover:bg-red-900': !data.isBlocked && (data.totalPeringatan ?? 0) < 3,
+                }"
+                class="text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1"
+              >
+                <Ban class="w-3.5 h-3.5" />
+                <span>{{ data.isBlocked ? 'Aktifkan' : 'Blokir' }}</span>
+              </button>
+              <button
+                @click="handleGiveWarning(data)"
+                class="bg-orange-500 hover:bg-orange-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1"
+              >
+                <MailWarningIcon class="w-3.5 h-3.5" />
+                <span>Peringatan</span>
+              </button>
+              <button
+                @click="openEditModal(data)"
+                class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1"
+              >
+                <Pencil class="w-3.5 h-3.5" />
+                <span>Edit</span>
+              </button>
+              <button
+                @click="confirmDelete(data)"
+                class="bg-red-500 hover:bg-red-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1 col-span-2"
+              >
+                <Trash2 class="w-3.5 h-3.5" />
+                <span>Hapus Pengguna</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State for Mobile -->
+      <div
+        v-if="paginatedUsers.length === 0 && filteredUsers.length > 0"
+        class="p-8 text-center text-gray-500 text-sm"
+      >
+        Tidak ada pengguna di halaman ini.
+      </div>
+      <div
+        v-else-if="filteredUsers.length === 0"
+        class="p-8 text-center text-gray-500 text-sm"
+      >
+        Tidak ada hasil yang cocok dengan pencarian Anda.
+      </div>
+    </div>
+
     <!-- Pagination Component -->
-    <UiPagination 
+    <UiPagination
+      v-if="totalPages > 1"
       :current-page="currentPage"
       :total-pages="totalPages"
       :total-items="filteredUsers.length"
@@ -990,160 +1090,9 @@ const userStats = computed(() => dashboardStats.value)
   </div>
 
   <!-- Tambah User Modal -->
-  <div v-if="isAddModalOpen"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
-    @click.self="closeAddModal">
-    <!-- Overlay -->
-    <div class="absolute inset-0 bg-black opacity-50"></div>
-
-    <!-- Modal Content Container -->
-    <div
-      class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 relative transform transition-all duration-300 scale-100 opacity-100"
-      @click.stop>
-
-      <h2 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2">
-        Tambah Pengguna Baru
-      </h2>
-
-      <!-- Close Button -->
-      <button @click="closeAddModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-
-      <!-- Form Tambah User -->
-      <form @submit.prevent="handleAddSubmit" class="space-y-4">
-
-        <div class="grid grid-cols-2 gap-4">
-          <!-- Role -->
-          <div>
-            <label for="add_role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-            <select id="add_role" v-model.number="newUserData.roleId"
-              class="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition bg-white"
-              required>
-              <option v-for="role in roleOptions" :key="role.value" :value="role.value">
-                {{ role.label }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Nama -->
-          <div>
-            <label for="add_nama" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-            <input id="add_nama" type="text" v-model="newUserData.nama"
-              class="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition"
-              required />
-          </div>
-
-          <!-- ID Unik (NIM/NIP) -->
-          <div>
-            <label for="add_unique_id" class="block text-sm font-medium text-gray-700 mb-1">ID Unik
-              (NIM/NIP)</label>
-            <input id="add_unique_id" type="text" v-model="newUserData.uniqueId"
-              class="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition"
-              required />
-          </div>
-
-          <!-- Email -->
-          <div>
-            <label for="add_email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input id="add_email" type="email" v-model="newUserData.email"
-              class="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition"
-              required />
-          </div>
-
-        </div>
-        <div>
-          <label for="add_password" class="block text-sm font-medium text-gray-700 mb-1">Password (Awal)</label>
-          <input id="add_password" type="password" v-model="newUserData.password"
-            class="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition"
-            required />
-        </div>
-        <!-- FIELD SPESIFIK MAHASISWA & DOSEN/PENGELOLA -->
-        <transition name="fade">
-          <div v-if="isNewUserMahasiswa" class="space-y-4 pt-2 border-t border-gray-100">
-            <h4 class="text-md font-semibold text-gray-800">Detail Mahasiswa</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <!-- NIM -->
-              <div>
-                <label for="add_nim" class="block text-sm font-medium text-gray-700 mb-1">NIM</label>
-                <input id="add_nim" type="text" v-model="newUserData.NIM"
-                  class="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition"
-                  required />
-              </div>
-              <!-- Semester -->
-              <div>
-                <label for="add_semester" class="block text-sm font-medium text-gray-700 mb-1">Semester</label>
-                <input id="add_semester" type="number" v-model.number="newUserData.semester"
-                  class="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition"
-                  min="1" />
-              </div>
-            </div>
-            <!-- Prodi ID -->
-            <div>
-              <label for="add_prodi_id" class="block text-sm font-medium text-gray-700 mb-1">Program Studi
-                (Prodi)</label>
-              <select id="add_prodi_id" v-model.number="newUserData.prodiId"
-                class="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition bg-white"
-                required>
-                <option :value="null" disabled>Pilih Prodi</option>
-                <option v-for="prodi in getProdiOptions" :key="prodi.value" :value="prodi.value">
-                  {{ prodi.label }}
-                </option>
-              </select>
-            </div>
-          </div>
-          <div v-else-if="isNewUserDosenPengelola" class="space-y-4 pt-2 border-t border-gray-100">
-            <h4 class="text-md font-semibold text-gray-800">Detail Dosen/Staf</h4>
-            <div>
-              <label for="add_nip" class="block text-sm font-medium text-gray-700 mb-1">NIP</label>
-              <input id="add_nip" type="text" v-model="newUserData.NIP"
-                class="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition"
-                required />
-            </div>
-          </div>
-        </transition>
-
-        <!-- Foto Profil Upload -->
-        <div class="pt-2">
-          <label for="new_profile_file_input" class="block text-sm font-medium text-gray-700 mb-1">Foto Profil
-            (Opsional)</label>
-          <div
-            class="flex flex-col items-center justify-center w-full p-4 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-300"
-            @click="$refs.newFileInput.click()">
-            <Upload class="w-8 h-8 text-gray-400 mb-1" />
-            <p class="text-sm text-gray-500 text-center">Seret/Pilih Gambar</p>
-          </div>
-          <input id="new_profile_file_input" type="file" class="hidden" @change="handleNewProfileFileChange"
-            accept="image/*" ref="newFileInput" />
-        </div>
-
-        <!-- Image Preview Tambah -->
-        <transition name="fade">
-          <div v-if="newProfileFile" class="mt-2 flex flex-col items-center">
-            <p class="text-sm font-medium text-gray-700 mb-2">Pratinjau Gambar:</p>
-            <img :src="newProfilePreviewUrl" alt="Pratinjau Profil Baru"
-              class="w-24 h-24 object-cover rounded-full border border-gray-200 shadow-sm" />
-            <p class="mt-1 text-sm text-gray-600">{{ newProfileFile.name }}</p>
-          </div>
-        </transition>
-
-        <!-- Action Buttons -->
-        <div class="flex justify-end space-x-3 pt-4">
-          <button type="button" @click="closeAddModal"
-            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition font-medium shadow-sm">
-            Batal
-          </button>
-          <button type="submit"
-            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium shadow-md">
-            Tambah Pengguna
-          </button>
-        </div>
-      </form>
-    </div>
+  <AddUserModal :is-open="isAddModalOpen" :role-options="roleOptions" :prodi-options="getProdiOptions"
+    @close="closeAddModal" @submit="handleAddSubmit" @validation-error="showNotification($event, 'error')" />
   </div>
-
 </template>
 
 <style scoped>

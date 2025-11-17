@@ -2,8 +2,8 @@
 import { ref, computed, watch } from 'vue'; // 'computed' tidak terpakai, tapi saya biarkan
 import FlatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
-import { isiFormPengajuanRuanganTerjadwal } from '~/lib/api/ruangan/ruanganApi';
-import { getMatkulbyNIM } from '~/lib/api/ruangan/ruanganApi';
+import { isiFormPengajuanRuanganTerjadwal } from '/lib/api/ruangan/ruanganAPI';
+import { getMatkulbyNIM } from '/lib/api/ruangan/ruanganAPI';
 
 // === TAMBAHKAN IMPORT INI ===
 import Swal from 'sweetalert2'
@@ -91,16 +91,20 @@ const submitForm = async () => {
     isLoading.value = false 
   }
 }
+
+const closeForm = () => {
+  emit('close'); 
+}
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4 overflow-y-auto">
+  <div v-if="show" class="fixed inset-0 bg-black/50 bg-opacity-50 z-50 flex justify-center items-center p-4 overflow-y-auto">
     
     <div v-if="room" class="bg-white p-6 sm:p-8 rounded-lg shadow-lg w-full max-w-lg space-y-5">
 
       <div class="flex justify-between items-center pb-3 border-b">
         <h3 class="text-xl font-bold text-gray-800">Isi Detail Peminjaman</h3>
-        <button @click="$emit('close')" class="text-gray-500 hover:text-gray-800 text-3xl font-light">&times;</button>
+        <button @click="closeForm" class="text-gray-500 hover:text-gray-800 text-3xl font-light">&times;</button>
       </div>
 
       <div class="space-y-3">
@@ -168,23 +172,22 @@ const submitForm = async () => {
         </div>
       </div>
 
-    <button 
-      type="button" 
-      @click="submitForm"
-      :disabled="!selectedMatkul || !jamMulai || !jamSelesai || availableMatkul.length === 0 || isLoading" 
-      class="mt-6 w-full px-6 py-3 bg-green-600 text-white font-bold rounded-md shadow-md hover:bg-green-700 transition duration-150 disabled:bg-gray-400 disabled:cursor-not-allowed flex justify-center items-center"
-    >
-      <span v-if="isLoading">
-        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-      </span>
-      <span v-else>
-        Pinjam
-      </span>
-      
-    </button>
+      <button 
+        type="button" 
+        @click="submitForm"
+        :disabled="!selectedMatkul || !jamMulai || !jamSelesai || availableMatkul.length === 0 || isLoading" 
+        class="mt-6 w-full px-6 py-3 bg-green-600 text-white font-bold rounded-md shadow-md hover:bg-green-700 transition duration-150 disabled:bg-gray-400 disabled:cursor-not-allowed flex justify-center items-center"
+      >
+        <span v-if="isLoading">
+          <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </span>
+        <span v-else>
+          Pinjam
+        </span>
+      </button>
 
     </div>
   </div>

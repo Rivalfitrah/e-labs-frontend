@@ -7,7 +7,8 @@ import { onMounted, ref, computed } from 'vue'
 import Swal from 'sweetalert2'
 import { getRuanganID } from '~/lib/api/ruangan'
 definePageMeta({
-  layout: 'dashboard'
+  layout: 'dashboard',
+  middleware: 'middleware'
 })
 
 // --- State for Data (Pengajuan) ---
@@ -107,7 +108,8 @@ function nextPage() {
 }
 
 // --- Data Formatting Helpers ---
-async function handleApprove(item) {``
+async function handleApprove(item) {
+  ``
   Swal.fire({
     title: 'Konfirmasi Persetujuan',
     text: `Anda yakin ingin MENYETUJUI pengajuan kegiatan "${item.kegiatan}" dari ${item.user?.nama}?`,
@@ -273,203 +275,212 @@ watch(paginatedPengajuan, () => {
 
 
 <template>
+  <div>
+    <transition enter-active-class="transition ease-out duration-300 transform"
+      enter-from-class="opacity-0 translate-y-full" enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition ease-in duration-300 transform" leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-full">
+      <div v-if="notification.show" :class="{
+        'bg-primary': notification.type === 'success',
+        'bg-red-500': notification.type === 'error'
+      }" class="fixed bottom-4 right-4 text-white p-4 rounded-lg shadow-xl z-50 transition-all duration-300">
+        {{ notification.message }}
+      </div>
+    </transition>
 
+    <div class="flex flex-col md:flex-row md:items-center gap-2 mb-4">
+      <div class="flex relative w-full">
 
-  <transition enter-active-class="transition ease-out duration-300 transform"
-    enter-from-class="opacity-0 translate-y-full" enter-to-class="opacity-100 translate-y-0"
-    leave-active-class="transition ease-in duration-300 transform" leave-from-class="opacity-100 translate-y-0"
-    leave-to-class="opacity-0 translate-y-full">
-    <div v-if="notification.show" :class="{
-      'bg-primary': notification.type === 'success',
-      'bg-red-500': notification.type === 'error'
-    }" class="fixed bottom-4 right-4 text-white p-4 rounded-lg shadow-xl z-50 transition-all duration-300">
-      {{ notification.message }}
+        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input type="text" v-model="search"
+          class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
+          placeholder="Cari Peminjam, Kegiatan, atau Status..." />
+
+      </div>
     </div>
-  </transition>
 
-  <div class="flex flex-col md:flex-row md:items-center gap-2 mb-4">
-    <div class="flex relative w-full">
 
-      <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-      <input type="text" v-model="search"
-        class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
-        placeholder="Cari Peminjam, Kegiatan, atau Status..." />
-
+    <div v-if="isLoading" class="text-center py-8 text-lg text-gray-500">
+      Memuat data pengajuan ruangan terjadwal...
     </div>
-  </div>
 
 
-  <div v-if="isLoading" class="text-center py-8 text-lg text-gray-500">
-    Memuat data pengajuan ruangan terjadwal...
-  </div>
+    <div v-else-if="pengajuanList.length === 0"
+      class="text-center py-8 text-lg text-gray-500 border border-dashed rounded-lg p-10 bg-white">
+      Tidak ada data pengajuan ruangan terjadwal yang ditemukan.
+    </div>
 
 
-  <div v-else-if="pengajuanList.length === 0"
-    class="text-center py-8 text-lg text-gray-500 border border-dashed rounded-lg p-10 bg-white">
-    Tidak ada data pengajuan ruangan terjadwal yang ditemukan.
-  </div>
+    <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
+      <!-- Info scroll untuk mobile -->
+      <div
+        class="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-700 flex items-center gap-2 lg:hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Geser ke kanan untuk melihat lebih banyak kolom</span>
+      </div>
+
+      <!-- Wrapper untuk scroll horizontal -->
+      <div class="overflow-x-auto">
+        <table class="w-full border-separate border-spacing-0 min-w-[1400px]">
+          <thead>
+            <tr class="bg-primary text-white text-center text-sm uppercase tracking-wider">
+              <th class="text-center px-4 py-3 w-16 sticky left-0 bg-primary z-10">No</th>
+              <th class="text-center px-4 py-3 min-w-[140px]">Peminjam</th>
+              <th class="text-center px-4 py-3 min-w-[160px]">Kegiatan</th>
+              <th class="text-center px-4 py-3 min-w-[120px]">Gedung</th>
+              <th class="text-center px-4 py-3 min-w-[140px]">Ruangan</th>
+              <th class="text-center px-4 py-3 min-w-[100px]">Tanggal</th>
+              <th class="text-center px-4 py-3 min-w-[120px]">Waktu</th>
+              <th class="text-center px-4 py-3 min-w-[100px]">Status</th>
+              <th class="text-center px-4 py-3 min-w-[140px]">Responden</th>
+              <th class="text-center px-4 py-3 min-w-[100px]">Dokumen</th>
+              <th class="text-center px-4 py-3 min-w-[180px] sticky right-0 bg-primary z-10">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="text-gray-700 text-sm text-center">
+            <tr v-for="(data, index) in paginatedPengajuan" :key="data.id"
+              class="hover:bg-blue-50 transition border-t border-gray-100 group text-center">
+              <td
+                class="px-4 py-3 font-mono align-middle sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r border-gray-100">
+                <span :title="formatCreatedAt(data.createdAt)">
+                  {{ (currentPage - 1) * itemsPerPage + index + 1 }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-center align-middle font-semibold">
+                <p class="truncate max-w-[140px]">{{ data.user?.nama || 'N/A' }}</p>
+                <p class="text-xs text-gray-500 font-normal truncate max-w-[140px]">{{ data.user?.email || '' }}</p>
+              </td>
+              <td class="px-4 py-3 font-semibold align-middle text-center">
+                <span v-if="data.kegiatan" class="line-clamp-2 max-w-[160px]">{{ data.kegiatan }}</span>
+                <span v-else class="inline-block bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs">Tanpa
+                  Kegiatan</span>
+              </td>
+              <td class="px-4 py-3 font-mono text-gray-500 align-middle">
+                <template v-if="ruanganDetails[data.ruangan_id]">
+                  <div class="text-xs text-gray-500 truncate max-w-[120px]">{{ ruanganDetails[data.ruangan_id].gedung }}
+                    - {{
+                      ruanganDetails[data.ruangan_id].kode_ruangan }}</div>
+                </template>
+                <template v-else>
+                  <span class="italic text-gray-400">Memuat...</span>
+                </template>
+              </td>
+              <td class="px-4 py-3 font-mono text-gray-500 align-middle">
+                <template v-if="ruanganDetails[data.ruangan_id]">
+                  <div class="font-semibold text-gray-800 truncate max-w-[140px]">{{
+                    ruanganDetails[data.ruangan_id].nama_ruangan }}</div>
+                </template>
+                <template v-else>
+                  <span class="italic text-gray-400">Memuat...</span>
+                </template>
+              </td>
+              <td class="px-4 py-3 font-mono text-gray-500 align-middle whitespace-nowrap">
+                {{ formatDate(data.tanggal) }}
+              </td>
+              <td class="px-4 py-3 font-mono text-gray-500 align-middle whitespace-nowrap">
+                <div>{{ formatTime(data.jam_mulai) }}</div>
+                <div>{{ formatTime(data.jam_selesai) }}</div>
+              </td>
+              <td class="px-4 py-3 font-mono align-middle">
+                <span :class="{
+                  'bg-yellow-100 text-yellow-800': data.status === 'PENDING',
+                  'bg-green-100 text-green-800': data.status === 'DISETUJUI',
+                  'bg-red-100 text-red-800': data.status === 'DITOLAK'
+                }" class="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap cursor-pointer inline-block"
+                  :title="data.status === 'DISETUJUI' && data.responden ? 'Direspon oleh ' + data.responden.nama : ''">
+                  {{ data.status || 'N/A' }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-center align-middle font-semibold">
+                <p class="truncate max-w-[140px]">{{ data.responden?.nama || 'Belum Direspon' }}</p>
+              </td>
+              <td class="px-4 py-3 text-center align-middle">
+                <div v-if="data.dokumen" v-html="dokumenBadge(data.dokumen)" class="truncate max-w-[100px]"></div>
+                <span v-else class="text-gray-400 italic">N/A</span>
+              </td>
+              <td
+                class="px-4 py-3 text-center align-middle sticky right-0 bg-white group-hover:bg-blue-50 z-10 border-l border-gray-100">
+                <div class="flex justify-center items-center gap-2">
+                  <button @click="handleViewDetail(data)"
+                    class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center flex-shrink-0"
+                    title="Lihat Detail">
+                    <Eye class="w-4 h-4" />
+                  </button>
+                  <button v-if="data.status === 'DIAJUKAN'" @click="handleApprove(data)"
+                    class="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center flex-shrink-0"
+                    title="Setujui Pengajuan">
+                    <CheckCircle class="w-4 h-4" />
+                  </button>
+                  <button v-if="data.status === 'DIAJUKAN'" @click="handleReject(data)"
+                    class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center flex-shrink-0"
+                    title="Tolak Pengajuan">
+                    <XCircle class="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="paginatedPengajuan.length === 0 && filteredPengajuan.length > 0">
+              <td colspan="11" class="text-center py-4 text-gray-500">Tidak ada pengajuan di halaman ini.</td>
+            </tr>
+            <tr v-else-if="filteredPengajuan.length === 0">
+              <td colspan="11" class="text-center py-4 text-gray-500">Tidak ada hasil yang cocok dengan pencarian Anda.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
 
-  <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
-    <table class="w-full border-separate border-spacing-0">
-      <thead>
-        <tr class="bg-primary text-white text-center text-sm uppercase tracking-wider">
-          <th class="text-center px-5 py-3 w-12">No</th>
-          <th class="text-center px-5 py-3 w-32">Peminjam</th>
-          <th class="text-center px-5 py-3 w-40">Kegiatan</th>
-          <th class="text-center px-5 py-3 w-40">Gedung</th>
-          <th class="text-center px-5 py-3 w-40">Ruangan</th>
-          <th class="text-center px-5 py-3 w-32">Tanggal</th>
-          <th class="text-center px-5 py-3 w-32">Waktu</th>
-          <th class="text-center px-5 py-3 w-32">Status</th>
-          <th class="text-center px-5 py-3 w-40">Responden</th>
-          <th class="text-center px-5 py-3 w-40">Dokumen</th>
-          <th class="text-center px-5 py-3 w-48">Aksi</th>
-        </tr>
-      </thead>
-      <tbody class="text-gray-700 text-sm text-center">
-        <tr v-for="(data, index) in paginatedPengajuan" :key="data.id"
-          class="hover:bg-blue-50 transition border-t border-gray-100 group text-center">
-          <td class="px-5 py-3 font-mono align-middle">
-            <span :title="formatCreatedAt(data.createdAt)">
-              {{ (currentPage - 1) * itemsPerPage + index + 1 }}
-            </span>
-          </td>
-          <td class="px-5 py-3 text-center align-middle font-semibold">
-            <p>{{ data.user?.nama || 'N/A' }}</p>
-            <p class="text-xs text-gray-500 font-normal">{{ data.user?.email || '' }}</p>
-          </td>
-          <td class="px-5 py-3 font-semibold align-middle text-center">
-            <span v-if="data.kegiatan" class="line-clamp-2">{{ data.kegiatan }}</span>
-            <span v-else class="inline-block bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs">Tanpa
-              Kegiatan</span>
-          </td>
-          <td class="px-5 py-3 font-mono text-gray-500 align-middle">
-            <template v-if="ruanganDetails[data.ruangan_id]">
-              <!-- <div class="font-semibold text-gray-800">{{ ruanganDetails[data.ruangan_id].nama_ruangan }}</div> -->
-              <div class="text-xs text-gray-500">{{ ruanganDetails[data.ruangan_id].gedung }} - {{
-                ruanganDetails[data.ruangan_id].kode_ruangan }}</div>
-
-            </template>
-            <template v-else>
-              <span class="italic text-gray-400">Memuat...</span>
-            </template>
-          </td>
-          <td class="px-5 py-3 font-mono text-gray-500 align-middle">
-            <template v-if="ruanganDetails[data.ruangan_id]">
-              <div class="font-semibold text-gray-800">{{ ruanganDetails[data.ruangan_id].nama_ruangan }}</div>
-              <!-- <div class="text-xs text-gray-500">{{ ruanganDetails[data.ruangan_id].gedung }} - {{
-                ruanganDetails[data.ruangan_id].kode_ruangan }}</div>
-              <span :class="{
-                'bg-green-100 text-green-800': ruanganDetails[data.ruangan_id].status === 'KOSONG',
-                'bg-red-100 text-red-800': ruanganDetails[data.ruangan_id].status !== 'KOSONG'
-              }" class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
-                {{ ruanganDetails[data.ruangan_id].status }}
-              </span> -->
-            </template>
-            <template v-else>
-              <span class="italic text-gray-400">Memuat...</span>
-            </template>
-          </td>
-          <td class="px-5 py-3 font-mono text-gray-500 align-middle whitespace-nowrap">
-            {{ formatDate(data.tanggal) }}
-          </td>
-          <td class="px-5 py-3 font-mono text-gray-500 align-middle whitespace-nowrap">
-            {{ formatTime(data.jam_mulai) }} - {{ formatTime(data.jam_selesai) }}
-          </td>
-          <td class="px-5 py-3 font-mono align-middle">
-            <span :class="{
-              'bg-yellow-100 text-yellow-800': data.status === 'PENDING',
-              'bg-green-100 text-green-800': data.status === 'DISETUJUI',
-              'bg-red-100 text-red-800': data.status === 'DITOLAK'
-            }" class="px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap cursor-pointer"
-              :title="data.status === 'DISETUJUI' && data.responden ? 'Direspon oleh ' + data.responden.nama : ''">
-              {{ data.status || 'N/A' }}
-            </span>
-          </td>
-          <td class="px-5 py-3 text-center align-middle font-semibold">
-            <p>{{ data.responden?.nama || 'Belum Direspon' }}</p>
-          </td>
-          <td class="px-5 py-3 text-center align-middle">
-            <div v-if="data.dokumen" v-html="dokumenBadge(data.dokumen)"></div>
-            <span v-else class="text-gray-400 italic"> N/A</span>
-          </td>
-          <td class="px-5 py-3 text-center align-middle">
-            <div class="flex justify-center items-center gap-2">
-              <button @click="handleViewDetail(data)"
-                class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center"
-                title="Lihat Detail">
-                <Eye class="inline w-4 h-4" />
-              </button>
-              <button v-if="data.status === 'DIAJUKAN'" @click="handleApprove(data)"
-                class="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center"
-                title="Setujui Pengajuan">
-                <CheckCircle class="inline w-4 h-4" />
-              </button>
-              <button v-if="data.status === 'DIAJUKAN'" @click="handleReject(data)"
-                class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center"
-                title="Tolak Pengajuan">
-                <XCircle class="inline w-4 h-4" />
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr v-if="paginatedPengajuan.length === 0 && filteredPengajuan.length > 0">
-          <td colspan="10" class="text-center py-4 text-gray-500">Tidak ada pengajuan di halaman ini.</td>
-        </tr>
-        <tr v-else-if="filteredPengajuan.length === 0">
-          <td colspan="10" class="text-center py-4 text-gray-500">Tidak ada hasil yang cocok dengan pencarian Anda.</td>
-        </tr>
-      </tbody>
-    </table>
+      <div v-if="totalPages > 1"
+        class="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
 
 
-    <div v-if="totalPages > 1" class="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
+        <span class="text-sm text-gray-700">
+          Menampilkan
+          <span class="font-semibold">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
+          sampai
+          <span class="font-semibold">{{ Math.min(currentPage * itemsPerPage, filteredPengajuan.length) }}</span>
+          dari
+          <span class="font-semibold">{{ filteredPengajuan.length }}</span>
+          pengajuan
+        </span>
 
 
-      <span class="text-sm text-gray-700">
-        Menampilkan
-        <span class="font-semibold">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
-        sampai
-        <span class="font-semibold">{{ Math.min(currentPage * itemsPerPage, filteredPengajuan.length) }}</span>
-        dari
-        <span class="font-semibold">{{ filteredPengajuan.length }}</span>
-        pengajuan
-      </span>
+        <nav class="flex items-center space-x-1" aria-label="Pagination">
 
 
-      <nav class="flex items-center space-x-1" aria-label="Pagination">
+          <button @click="prevPage" :disabled="currentPage === 1"
+            :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
+            class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
 
+            <ChevronLeft class="w-5 h-5" />
 
-        <button @click="prevPage" :disabled="currentPage === 1"
-          :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
-          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-
-          <ChevronLeft class="w-5 h-5" />
-
-        </button>
-
-
-        <div class="hidden sm:flex space-x-1">
-          <button v-for="page in totalPages" :key="page" @click="goToPage(page)" :class="{
-            'bg-primary text-white': page === currentPage,
-            'bg-white text-gray-700 hover:bg-gray-100': page !== currentPage
-          }" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition">
-            {{ page }}
           </button>
-        </div>
 
 
-        <button @click="nextPage" :disabled="currentPage === totalPages"
-          :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
-          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
+          <div class="hidden sm:flex space-x-1">
+            <button v-for="page in totalPages" :key="page" @click="goToPage(page)" :class="{
+              'bg-primary text-white': page === currentPage,
+              'bg-white text-gray-700 hover:bg-gray-100': page !== currentPage
+            }" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition">
+              {{ page }}
+            </button>
+          </div>
 
-          <ChevronRight class="w-5 h-5" />
 
-        </button>
-      </nav>
+          <button @click="nextPage" :disabled="currentPage === totalPages"
+            :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
+            class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
+
+            <ChevronRight class="w-5 h-5" />
+
+          </button>
+        </nav>
+      </div>
     </div>
-
   </div>
 
 </template>

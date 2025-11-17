@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import Swal from 'sweetalert2';
-import { Search, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-vue-next'; 
+import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, BookOpen, GraduationCap } from 'lucide-vue-next'; 
 
 // Import API Mata Kuliah dan API Prodi (Asumsi path ini sudah benar di project Anda)
 import {
@@ -9,19 +9,22 @@ import {
 } from '~/lib/api/pengguna';
 import { getProdiList } from '~/lib/api/pengguna';
 
-// Import komponen dasar (UiInfoBox dihilangkan dari template karena tidak digunakan)
-// import UiInfoBox from '~/components/ui/infoBox.vue'; 
+// Import komponen infobox
+import UiInfoBox from '~/components/ui/infoBox.vue'; 
 
 definePageMeta({
-    layout: 'dashboard'
-});
-
-// --- STATE MANAGEMENT ---
+  layout: 'dashboard',
+  middleware: 'middleware'
+});// --- STATE MANAGEMENT ---
 const matakuliahList = ref([]);
 const isLoading = ref(true);
 const search = ref('');
 const notification = ref({ show: false, message: '', type: 'success' });
 const getProdiOptions = ref([]);
+const matkulStats = ref({
+    totalProdi: 0,
+    totalSemester: 0
+});
 
 // Modal State
 const isEditModalOpen = ref(false);
@@ -71,40 +74,6 @@ const paginatedMatakuliah = computed(() => {
     return filteredMatakuliah.value.slice(start, end);
 });
 
-// LOGIKA PAGINATION DENGAN ELIPSIS (DARI INPUT USER)
-const paginationPages = computed(() => {
-    const pages = [];
-    const maxPagesToShow = 5;
-    const total = totalPages.value;
-    const current = currentPage.value;
-
-    if (total <= maxPagesToShow) {
-        for (let i = 1; i <= total; i++) pages.push(i);
-    } else {
-        pages.push(1);
-        if (current > 3) pages.push('...');
-        
-        let start = Math.max(2, current - 1);
-        let end = Math.min(total - 1, current + 1);
-
-        if (current <= 3) end = 4;
-        if (current >= total - 2) start = total - 3;
-        
-        // Memastikan range tidak tumpang tindih
-        start = Math.max(start, 2);
-        end = Math.min(end, total - 1);
-
-        for (let i = start; i <= end; i++) {
-            if (i > 1 && i < total) pages.push(i);
-        }
-
-        if (current < total - 2) pages.push('...');
-        pages.push(total);
-    }
-    // Filter duplikat '...'
-    return pages.filter((page, index, self) => page !== '...' || self[index - 1] !== '...');
-});
-
 function goToPage(page) {
     if (page >= 1 && page <= totalPages.value) {
         currentPage.value = page;
@@ -112,6 +81,22 @@ function goToPage(page) {
 }
 function prevPage() { if (currentPage.value > 1) currentPage.value--; }
 function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
+
+// --- STATISTICS CALCULATION ---
+function calculateStats(matkulData, prodiData) {
+    // Hitung jumlah prodi unik dari data mata kuliah
+    const uniqueProdiIds = new Set(matkulData.map(m => m.prodi_id || m.prodi?.id).filter(id => id !== null && id !== undefined));
+    
+    // Hitung jumlah semester unik dari data mata kuliah
+    const uniqueSemesters = new Set(matkulData.map(m => m.semester).filter(s => s !== null && s !== undefined));
+    
+    matkulStats.value = {
+        totalProdi: uniqueProdiIds.size,
+        totalSemester: uniqueSemesters.size
+    };
+    
+    console.log('Matkul stats calculated:', matkulStats.value);
+}
 
 // --- DATA FETCHING ---
 async function fetchInitialData() {
@@ -130,6 +115,9 @@ async function fetchInitialData() {
             value: prodi.id,
             label: prodi.nama_prodi
         }));
+
+        // Hitung statistik
+        calculateStats(actualMatkulData, prodiData);
 
     } catch (error) {
         console.error('❌ Failed to fetch initial data:', error);
@@ -328,11 +316,42 @@ async function handleDelete(id, namaMatkul) {
         </div>
     </transition>
 
+    <!-- Statistik Mata Kuliah -->
+    <section class="mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <UiInfoBox
+                type="total"
+                class="hover:scale-105 transition-transform duration-200"
+            >
+                <template #title>
+                    <span class="flex items-center gap-2">
+                        <GraduationCap class="w-4 h-4 text-primary" />
+                        Total Prodi
+                    </span>
+                </template>
+                <span class="text-2xl font-bold text-primary">{{ matkulStats?.totalProdi || 0 }}</span>
+            </UiInfoBox>
+
+            <UiInfoBox
+                type="tersedia"
+                class="hover:scale-105 transition-transform duration-200"
+            >
+                <template #title>
+                    <span class="flex items-center gap-2">
+                        <BookOpen class="w-4 h-4 text-green-600" />
+                        Total Semester
+                    </span>
+                </template>
+                <span class="text-2xl font-bold text-green-600">{{ matkulStats?.totalSemester || 0 }}</span>
+            </UiInfoBox>
+        </div>
+    </section>
+
     <div class="flex flex-col md:flex-row md:items-center gap-2 mb-4">
         <div class="flex relative w-full">
             <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input type="text" v-model="search"
-                class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
+                class="pl-10 pr-4 py-2 w-full border bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
                 placeholder="Cari Mata Kuliah, Prodi, atau Semester..." />
         </div>
         <button @click="openAddModal"
@@ -468,51 +487,18 @@ async function handleDelete(id, namaMatkul) {
         </div>
 
 
-        <div v-if="totalPages > 1"
-            class="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
-            <span class="text-sm text-gray-700">
-                Menampilkan
-                <span class="font-semibold">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
-                sampai
-                <span class="font-semibold">{{ Math.min(currentPage * itemsPerPage, filteredMatakuliah.length) }}</span>
-                dari
-                <span class="font-semibold">{{ filteredMatakuliah.length }}</span>
-                Mata Kuliah
-            </span>
-            <nav class="flex items-center space-x-1" aria-label="Pagination">
-                <button @click="goToPage(1)" :disabled="currentPage === 1"
-                    :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
-                    class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition text-sm">
-                    &laquo;
-                </button>
-                <button @click="prevPage" :disabled="currentPage === 1"
-                    :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
-                    class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-                    <ChevronLeft class="w-5 h-5" />
-                </button>
-                <div class="flex space-x-1">
-                    <template v-for="(page, idx) in paginationPages" :key="idx">
-                        <button v-if="page !== '...'" @click="goToPage(page)" :class="{
-                            'bg-primary text-white': page === currentPage,
-                            'bg-white text-gray-700 hover:bg-gray-100': page !== currentPage
-                        }" class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition">
-                            {{ page }}
-                        </button>
-                        <span v-else class="px-3 py-2 text-gray-400 select-none text-sm">...</span>
-                    </template>
-                </div>
-                <button @click="nextPage" :disabled="currentPage === totalPages"
-                    :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
-                    class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-                    <ChevronRight class="w-5 h-5" />
-                </button>
-                <button @click="goToPage(totalPages)" :disabled="currentPage === totalPages"
-                    :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
-                    class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition text-sm">
-                    &raquo;
-                </button>
-            </nav>
-        </div>
+        <!-- Pagination Component -->
+        <UiPagination
+            v-if="totalPages > 1"
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            :total-items="filteredMatakuliah.length"
+            :items-per-page="itemsPerPage"
+            item-label="mata kuliah"
+            @previous="prevPage"
+            @next="nextPage"
+            @go-to-page="goToPage"
+        />
         </div>
 
 

@@ -42,6 +42,7 @@ export const isiFormPengajuanRuanganTerjadwal = async (id: string, data: any) =>
 export const getMatkulbyNIM = async (nim: string) => {
   try {
     const res = await api.get(`/peminjaman/ruangan/matkul/${nim}`);
+    console.log(res.data);
     return res.data; // return semua: { success, message, data }
   } catch (err) {
     console.error("Error fetching matkul by NIM:", err);

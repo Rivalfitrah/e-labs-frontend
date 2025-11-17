@@ -5,6 +5,7 @@ import axios from 'axios'
 import { base_URL } from '../base'
 import { navigateTo } from '#app';
 import Swal from 'sweetalert2';
+import type { LoginPayload, UpdatePasswordPayload } from '../types/AuthType';
 
 console.log('runtime config:', useRuntimeConfig())
 export async function Login(email: string, password: string) {
@@ -40,34 +41,116 @@ export async function Logout(){
 
 export async function getProfile() {
   try {
+    console.log("📡 Memanggil API /auth/me...");
+    console.log("📡 Base URL:", base_URL);
+    
+    // Langsung hit API, backend akan baca token dari httpOnly cookie
     const response = await axios.get(`${base_URL}/api/auth/me`, {
-      withCredentials: true,
+      withCredentials: true, // PENTING: Kirim cookie httpOnly
     });
-    console.log("Profile response:", response.data);
+
+    console.log("✅ Profile berhasil diambil:", response.data);
     return response.data;
+
   } catch (error: any) {
-    console.error("Error fetching profile:", error);
+    const status = error.response?.status;
+    console.error("❌ Error getProfile:", {
+      status,
+      message: error.response?.data?.message,
+      debug: error.response?.data?.debug,
+      fullError: error.response?.data
+    });
 
-    // ✅ Jika token tidak valid / expired
-    if (error.response && [401, 403].includes(error.response.status)) {
-      console.warn("Token tidak valid atau sudah expired. Redirect ke login...");
-
-      // 🔥 Tampilkan toast dulu (di kanan atas)
-      await Swal.fire({
-        toast: true,
-        position: "top-end", // pojok kanan atas
-        icon: "warning",
-        title: "Sesi Anda telah berakhir",
-        text: "Silakan login kembali untuk melanjutkan.",
-        showConfirmButton: false,
-        timer: 2500,
-        timerProgressBar: true,
-      });
-
-      // 🔄 Setelah toast selesai (2.5 detik), redirect ke login
-      await navigateTo("/auth/login");
+    // Jika 401 = no token atau invalid token
+    if (status === 401) {
+      const debugMsg = error.response?.data?.debug || '';
+      if (debugMsg.includes('Missing token')) {
+        console.warn("❌ No token provided");
+        return { noToken: true };
+      }
+      console.warn("⚠️ Token expired atau invalid");
+      return { expired: true };
     }
 
-    throw error;
+    // 403 = forbidden
+    if (status === 403) {
+      console.warn("⚠️ Token expired atau invalid");
+      return { expired: true };
+    }
+
+    // Network error atau server error
+    console.warn("⚠️ Network/Server error, treating as no token");
+    return { noToken: true };
   }
 }
+
+
+
+
+export async function UpdatePassword(payload: UpdatePasswordPayload) {
+    try {
+        const response = await axios.patch(
+            `${base_URL}/api/auth/change-your-password`,
+            payload,
+            { withCredentials: true } 
+        );
+        console.log('Update password response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error during update password:', error);
+        throw error;
+    }
+}
+
+export async function ForgotPassword(email: string) {
+    try {
+        const response = await axios.post(
+            `${base_URL}/api/auth/request-password-reset`,
+            { email },
+            { withCredentials: true } 
+        );
+        console.log('Forgot password response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error during forgot password:', error);
+        throw error;
+    }
+}
+
+
+export async function VerifyOTP(email: string, otp: string) {
+    try {
+        const response = await axios.post(
+            `${base_URL}/api/auth/verify-otp`,
+            { email, otp },
+            { withCredentials: true } 
+        );
+        console.log('Verify OTP response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error during verify OTP:', error);
+        throw error;
+    }
+}
+
+export async function ResetPassword(
+    email: string,
+    otp: string,
+    newPassword: string,
+    confirmPassword: string
+) {
+    try {
+        const response = await axios.post(
+            `${base_URL}/api/auth/reset-password`,
+            { email, otp, newPassword, confirmPassword },
+            { withCredentials: true }
+        );
+
+        return response.data;
+
+    } catch (error) {
+        console.error('Error during reset password:', error);
+        throw error;
+    }
+}
+

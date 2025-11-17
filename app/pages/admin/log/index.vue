@@ -6,7 +6,8 @@ import { onMounted, ref, computed } from 'vue'
 import Swal from 'sweetalert2'
 
 definePageMeta({
-  layout: 'dashboard'
+  layout: 'dashboard',
+  middleware: 'middleware'
 })
 
 // --- State for Data (Log) ---
