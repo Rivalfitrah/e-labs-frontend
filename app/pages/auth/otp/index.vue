@@ -1,21 +1,22 @@
 <script setup>
 import { ref, nextTick } from 'vue'
-import { ResetPassword } from '~/lib/api/auth'
-
+import { VerifyOTP } from '~/lib/api/auth'   // <-- WAJIB
 const otpInputs = ref([])
 const otp = ref(['', '', '', '', '', ''])
 
-// Auto focus ke input berikutnya
+// Ambil email dari localStorage
+const email = ref(localStorage.getItem("reset_email") || "")
+
+// Auto focus
 const handleInput = async (index, event) => {
   const value = event.target.value
-  
+
   if (value && index < 5) {
     await nextTick()
     otpInputs.value[index + 1]?.focus()
   }
 }
 
-// Handle backspace untuk fokus ke input sebelumnya
 const handleKeydown = async (index, event) => {
   if (event.key === 'Backspace' && !otp.value[index] && index > 0) {
     await nextTick()
@@ -23,11 +24,10 @@ const handleKeydown = async (index, event) => {
   }
 }
 
-// Handle paste
 const handlePaste = (event) => {
   event.preventDefault()
   const pastedData = event.clipboardData.getData('text').slice(0, 6)
-  
+
   pastedData.split('').forEach((char, index) => {
     if (index < 6 && /^\d$/.test(char)) {
       otp.value[index] = char
@@ -37,15 +37,19 @@ const handlePaste = (event) => {
 
 const submitOTP = async () => {
   const otpValue = otp.value.join('')
+
   try {
-    const response = await ResetPassword(otpValue, newPassword);
+    await VerifyOTP(email.value, otpValue)
+
+    // Redirect jika OTP valid
+    navigateTo(`/auth/reset-password?email=${email.value}&otp=${otpValue}`)
 
   } catch (error) {
-    console.error("Error during OTP submission:", error);
+    console.error("OTP verification failed", error)
   }
-  // Handle OTP submission
 }
 </script>
+
 
 <template>
     <div

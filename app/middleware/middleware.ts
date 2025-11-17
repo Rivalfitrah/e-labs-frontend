@@ -1,19 +1,25 @@
 import { getProfile } from "~/lib/api/auth";
 
 
-export default defineNuxtRouteMiddleware(async () => {
+export default defineNuxtRouteMiddleware(async (to) => {
+  console.log("🔒 Middleware dipanggil untuk route:", to.path);
+  
   const profile = await getProfile();
+  console.log("📋 Profile result:", profile);
 
-  // 🔥 Tidak ada token → redirect ke 404 (user belum pernah login)
+  // 🔥 Tidak ada token → redirect ke login (user belum pernah login)
   if (profile?.noToken) {
-    return navigateTo("/404");  
+    console.log("❌ Tidak ada token, redirect ke login");
+    return navigateTo("/auth/login");  
   }
 
   // 🔥 Token ada tapi tidak valid/expired → redirect ke login
   if (profile?.expired) {
+    console.log("⚠️ Token expired, redirect ke login");
     return navigateTo("/auth/login");
   }
 
+  console.log("✅ Auth check passed");
   return true;
 });
 
@@ -21,9 +27,9 @@ export default defineNuxtRouteMiddleware(async () => {
 export async function middlewareRoleCheck(allowedRoles: string[] = []) {
   const profile = await getProfile();
 
-  // 🔥 Tidak ada token → redirect ke 404
+  // 🔥 Tidak ada token → redirect ke login
   if (profile?.noToken) {
-    return navigateTo("/404");
+    return navigateTo("/auth/login");
   }
 
   // 🔥 Token ada tapi tidak valid/expired → redirect ke login

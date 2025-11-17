@@ -41,28 +41,46 @@ export async function Logout(){
 
 export async function getProfile() {
   try {
-    const token = useCookie("token").value;
-
-    if (!token) {
-      console.warn("Tidak ada token → pengguna belum login.");
-      return { noToken: true };
-    }
-
+    console.log("📡 Memanggil API /auth/me...");
+    console.log("📡 Base URL:", base_URL);
+    
+    // Langsung hit API, backend akan baca token dari httpOnly cookie
     const response = await axios.get(`${base_URL}/api/auth/me`, {
-      withCredentials: true,
+      withCredentials: true, // PENTING: Kirim cookie httpOnly
     });
 
+    console.log("✅ Profile berhasil diambil:", response.data);
     return response.data;
 
   } catch (error: any) {
     const status = error.response?.status;
+    console.error("❌ Error getProfile:", {
+      status,
+      message: error.response?.data?.message,
+      debug: error.response?.data?.debug,
+      fullError: error.response?.data
+    });
 
-    // token invalid / expired
-    if ([401, 403].includes(status)) {
+    // Jika 401 = no token atau invalid token
+    if (status === 401) {
+      const debugMsg = error.response?.data?.debug || '';
+      if (debugMsg.includes('Missing token')) {
+        console.warn("❌ No token provided");
+        return { noToken: true };
+      }
+      console.warn("⚠️ Token expired atau invalid");
       return { expired: true };
     }
 
-    throw error;
+    // 403 = forbidden
+    if (status === 403) {
+      console.warn("⚠️ Token expired atau invalid");
+      return { expired: true };
+    }
+
+    // Network error atau server error
+    console.warn("⚠️ Network/Server error, treating as no token");
+    return { noToken: true };
   }
 }
 
@@ -99,16 +117,40 @@ export async function ForgotPassword(email: string) {
     }
 }
 
-export async function ResetPassword(email: string, otp: string, newPassword: string, confirmPassword: string) {
+
+export async function VerifyOTP(email: string, otp: string) {
     try {
         const response = await axios.post(
-            `${base_URL}/api/auth/reset-password`,
-            { email, token: otp, newPassword, confirmPassword },
-            { withCredentials: true }
+            `${base_URL}/api/auth/verify-otp`,
+            { email, otp },
+            { withCredentials: true } 
         );
+        console.log('Verify OTP response:', response.data);
         return response.data;
     } catch (error) {
-        console.error('Error during OTP verification:', error);
+        console.error('Error during verify OTP:', error);
         throw error;
     }
 }
+
+export async function ResetPassword(
+    email: string,
+    otp: string,
+    newPassword: string,
+    confirmPassword: string
+) {
+    try {
+        const response = await axios.post(
+            `${base_URL}/api/auth/reset-password`,
+            { email, otp, newPassword, confirmPassword },
+            { withCredentials: true }
+        );
+
+        return response.data;
+
+    } catch (error) {
+        console.error('Error during reset password:', error);
+        throw error;
+    }
+}
+

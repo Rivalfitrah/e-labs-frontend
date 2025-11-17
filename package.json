@@ -10,6 +10,10 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@fullcalendar/daygrid": "^6.1.19",
+    "@fullcalendar/interaction": "^6.1.19",
+    "@fullcalendar/timegrid": "^6.1.19",
+    "@fullcalendar/vue3": "^6.1.19",
     "@tailwindcss/vite": "^4.1.13",
     "@vueuse/core": "^14.0.0",
     "axios": "^1.12.2",

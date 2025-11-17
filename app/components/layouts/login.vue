@@ -2,13 +2,11 @@
   import Swal from "sweetalert2";
   import { ref } from "vue";
   import { Login } from "~/lib/api/auth";
-  import { useRouter } from "vue-router";
   import { Mail, Lock, Eye, EyeOff } from "lucide-vue-next";
 
   const email = ref("");
   const password = ref("");
   const loading = ref(false);
-  const router = useRouter();
   const showPassword = ref(false);
 
   const togglePassword = () => {
@@ -19,24 +17,41 @@
     loading.value = true;
     try {
       const response = await Login(email.value, password.value);
-      console.log(response);
-      Swal.fire({
-        icon: "success",
-        title: "Login Successful",
-        text: "You have been logged in successfully!",
-      });
-      // localStorage.setItem('token', response.data.token)
+      console.log("✅ Login response:", response);
+      console.log("🍪 Backend sudah set httpOnly cookie dengan token:", response.data.token.substring(0, 30) + "...");
+      
+      // Simpan user data ke localStorage
       localStorage.setItem("user", JSON.stringify(response.data));
 
-      // Redirect to dashboard or another page
-      router.push("/admin/dashboard");
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Login Failed",
-        text: "Invalid email or password. Please try again.",
+      await Swal.fire({
+        icon: "success",
+        title: "Login Berhasil",
+        text: "Selamat datang di E-LABS+!",
+        timer: 1500,
+        showConfirmButton: false
       });
-      console.log(error);
+
+      console.log("🔄 Redirecting ke dashboard...");
+      
+      // Hard reload ke dashboard untuk memastikan middleware berjalan fresh
+      window.location.href = "/admin/dashboard";
+      
+    } catch (error) {
+      console.error("❌ Login error:", error);
+      
+      let errorMessage = "Email atau password salah. Silakan coba lagi.";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      await Swal.fire({
+        icon: "error",
+        title: "Login Gagal",
+        text: errorMessage,
+      });
     } finally {
       loading.value = false;
     }
@@ -106,7 +121,7 @@
         </div>
 
         <p>
-          <a href="#" class="text-sm text-blue-600 hover:underline mt-4 block"
+          <a href="/auth/forgot-password" class="text-sm text-blue-600 hover:underline mt-4 block"
             >Forgot Password?</a
           >
         </p>
