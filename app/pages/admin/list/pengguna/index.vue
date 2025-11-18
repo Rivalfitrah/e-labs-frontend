@@ -430,15 +430,15 @@ async function confirmDelete(item) {
   });
 
   if (result.isConfirmed) {
-    await handleDelete(item.id, item.nama);
+    await handleDelete(item.uniqueId, item.nama);
   }
 }
 
-async function handleDelete(id, nama) {
+async function handleDelete(uniqueId, nama) {
   try {
-    await deleteUser(id);
+    await deleteUser(uniqueId);
 
-    users.value = users.value.filter(u => u.id !== id);
+    users.value = users.value.filter(u => u.uniqueId !== uniqueId);
     if (paginatedUsers.value.length === 0 && currentPage.value > 1) {
       currentPage.value--;
     }
