@@ -32,3 +32,22 @@ export async function verifikasiPengajuanRuanganTerjadwal(id: any, status: any) 
         throw error;
     }
 }
+
+export async function cancelRuangan(id: any, status: any) {
+    try {
+        const role = await getUserRole();
+        if (role !== 'pengelola' && role !== 'superadmin') {
+            throw new Error('Unauthorized: Only pengelola and superadmin can verify room requests.');
+        }
+        const response = await axios.patch(`${base_URL}/api/admin/verifikasi/peminjaman-ruangan/cancel/${id}`, { 
+            status
+        }, {
+            withCredentials: true,
+        })
+        console.log('Verification response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error verifying scheduled room request:', error);
+        throw error;
+    }
+}

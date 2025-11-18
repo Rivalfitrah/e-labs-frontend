@@ -15,8 +15,7 @@ import UiPagination from '~/components/ui/pagination.vue'
 import AddUserModal from '~/components/ui/AddUserModal.vue'
 
 definePageMeta({
-  layout: 'dashboard',
-  middleware: 'middleware'
+  layout: 'dashboard'
 });
 
 // --- STATE MANAGEMENT ---
@@ -664,8 +663,8 @@ const userStats = computed(() => dashboardStats.value)
 
 
   <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
-    <!-- Desktop Table - Hidden on Mobile -->
-    <div class="hidden md:block overflow-x-auto">
+    <!-- Wrapper untuk tabel dengan overflow horizontal -->
+    <div class="overflow-x-auto">
       <table class="w-full table-fixed border-separate border-spacing-0 min-w-max">
         <thead>
           <tr class="bg-primary text-white text-center text-xs uppercase tracking-wider">
@@ -771,134 +770,8 @@ const userStats = computed(() => dashboardStats.value)
       </table>
     </div>
 
-    <!-- Mobile Card View - Visible on Mobile Only -->
-    <div class="md:hidden divide-y divide-gray-200">
-      <div
-        v-for="(data, index) in paginatedUsers"
-        :key="'mobile-' + data.id"
-        class="p-4 hover:bg-gray-50 transition"
-      >
-        <div class="flex items-start gap-3">
-          <!-- Foto & No -->
-          <div class="shrink-0">
-            <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200">
-              <img :src="getProfileUrl(`${storage_URL}/uploads/${data.profilUrl}`)" alt="Foto Profil"
-                class="w-full h-full object-cover"
-                onerror="this.onerror=null;this.src='https://placehold.co/64x64/f1f1f1/333333?text=N/A';" />
-            </div>
-            <div class="text-center mt-1 text-xs text-gray-500 font-mono">
-              #{{ (currentPage - 1) * itemsPerPage + index + 1 }}
-            </div>
-          </div>
-
-          <!-- Info -->
-          <div class="flex-1 min-w-0">
-            <h3 class="font-semibold text-gray-900 text-sm mb-1">{{ data.nama }}</h3>
-            <p class="text-xs text-gray-500 mb-2 truncate">{{ data.email }}</p>
-
-            <div class="space-y-1 text-xs text-gray-600">
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-gray-500 w-24">ID/NIM/NIP:</span>
-                <span class="font-mono">{{ data.NIM || data.NIP || data.uniqueId }}</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-gray-500 w-24">Role:</span>
-                <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium">
-                  {{ data.role ? getRoleLabel(data.role.nama_role) : 'N/A' }}
-                </span>
-              </div>
-              <div v-if="data.prodiId" class="flex items-center gap-2">
-                <span class="font-medium text-gray-500 w-24">Prodi:</span>
-                <span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full text-xs font-medium">
-                  {{getProdiOptions.find(p => p.value === data.prodiId)?.label || 'N/A'}}
-                </span>
-              </div>
-              <div v-if="data.semester" class="flex items-center gap-2">
-                <span class="font-medium text-gray-500 w-24">Semester:</span>
-                <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium">
-                  {{ data.semester }}
-                </span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-gray-500 w-24">Peringatan:</span>
-                <span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium">
-                  {{ data.totalPeringatan ?? 0 }}
-                </span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="font-medium text-gray-500 w-24">Status:</span>
-                <span :class="getStatusClass(data.isBlocked)"
-                  class="px-2 py-0.5 rounded-full text-xs font-medium">
-                  {{ data.isBlocked ? 'BLOCKED' : 'AKTIF' }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="grid grid-cols-2 gap-2 mt-3">
-              <button
-                @click="openProfileModal(data)"
-                class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1"
-              >
-                <ImageIcon class="w-3.5 h-3.5" />
-                <span>Foto</span>
-              </button>
-              <button
-                @click="handleToggleBlock(data)"
-                :class="{
-                  'bg-green-600 hover:bg-green-700': data.isBlocked,
-                  'bg-red-500 hover:bg-red-600': !data.isBlocked && (data.totalPeringatan ?? 0) >= 3,
-                  'bg-red-800 hover:bg-red-900': !data.isBlocked && (data.totalPeringatan ?? 0) < 3,
-                }"
-                class="text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1"
-              >
-                <Ban class="w-3.5 h-3.5" />
-                <span>{{ data.isBlocked ? 'Aktifkan' : 'Blokir' }}</span>
-              </button>
-              <button
-                @click="handleGiveWarning(data)"
-                class="bg-orange-500 hover:bg-orange-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1"
-              >
-                <MailWarningIcon class="w-3.5 h-3.5" />
-                <span>Peringatan</span>
-              </button>
-              <button
-                @click="openEditModal(data)"
-                class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1"
-              >
-                <Pencil class="w-3.5 h-3.5" />
-                <span>Edit</span>
-              </button>
-              <button
-                @click="confirmDelete(data)"
-                class="bg-red-500 hover:bg-red-600 text-white px-2 py-2 rounded-lg shadow text-xs font-medium transition flex items-center justify-center gap-1 col-span-2"
-              >
-                <Trash2 class="w-3.5 h-3.5" />
-                <span>Hapus Pengguna</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Empty State for Mobile -->
-      <div
-        v-if="paginatedUsers.length === 0 && filteredUsers.length > 0"
-        class="p-8 text-center text-gray-500 text-sm"
-      >
-        Tidak ada pengguna di halaman ini.
-      </div>
-      <div
-        v-else-if="filteredUsers.length === 0"
-        class="p-8 text-center text-gray-500 text-sm"
-      >
-        Tidak ada hasil yang cocok dengan pencarian Anda.
-      </div>
-    </div>
-
     <!-- Pagination Component -->
-    <UiPagination
-      v-if="totalPages > 1"
+    <UiPagination 
       :current-page="currentPage"
       :total-pages="totalPages"
       :total-items="filteredUsers.length"
@@ -1023,66 +896,6 @@ const userStats = computed(() => dashboardStats.value)
           <button type="submit"
             class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-green-700 transition font-medium shadow-md">
             Simpan Perubahan
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Profile Image Upload Modal -->
-  <div v-if="isProfileModalOpen"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
-    @click.self="closeProfileModal">
-    <!-- Overlay -->
-    <div class="absolute inset-0 bg-black opacity-50"></div>
-
-    <!-- Modal Content Container -->
-    <div
-      class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 relative transform transition-all duration-300 scale-100 opacity-100"
-      @click.stop>
-
-      <h2 class="text-2xl font-extrabold text-gray-800 mb-4 border-b pb-2">
-        Unggah Foto Profil: <span class="text-primary">{{ selectedUser?.nama }}</span>
-      </h2>
-
-      <!-- Close Button -->
-      <button @click="closeProfileModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-
-      <form @submit.prevent="handleProfileUpload" class="space-y-4">
-        <!-- Preview -->
-        <div class="mt-4 flex flex-col items-center">
-          <div class="w-24 h-24 rounded-full overflow-hidden border border-gray-300 mb-3">
-            <img :src="profilePreviewUrl" alt="Pratinjau Profil" class="w-full h-full object-cover" />
-          </div>
-          <p class="text-sm font-medium text-gray-700 mb-2">Pilih Foto Baru:</p>
-        </div>
-
-        <!-- Drag and Drop Area -->
-        <!-- Menghapus @drop="handleDrop" dan @dragover/dragleave karena tidak relevan tanpa state tambahan -->
-        <label for="profile_file_input" @dragover.prevent="handleDragOver" @dragleave="handleDragLeave"
-          @drop.prevent="handleDrop"
-          class="flex flex-col items-center justify-center w-full p-6 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-300">
-          <Upload class="w-12 h-12 text-gray-400 mb-3" />
-          <p class="mb-2 text-sm text-gray-500 text-center">
-            <span class="font-semibold">Klik untuk memilih</span> atau seret dan lepas gambar di sini
-          </p>
-          <p class="text-xs text-gray-500">PNG, JPG, JPEG (MAX. 5MB)</p>
-          <input id="profile_file_input" type="file" class="hidden" @change="handleProfileFileChange"
-            accept="image/*" />
-        </label>
-
-        <div class="flex justify-end space-x-3 pt-4">
-          <button type="button" @click="closeProfileModal"
-            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition font-medium shadow-sm">
-            Batal
-          </button>
-          <button type="submit" :disabled="!profileFile" :class="{ 'opacity-50 cursor-not-allowed': !profileFile }"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md">
-            Unggah Profil
           </button>
         </div>
       </form>

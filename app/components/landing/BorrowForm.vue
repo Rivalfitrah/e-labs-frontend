@@ -62,17 +62,14 @@ watch(() => props.show, (val) => {
 const submitForm = async () => {
   isLoading.value = true 
   try {
-    const payload = {
-      id: props.bookingId,
-      nim: props.nim,
-      matkul_id: selectedMatkul.value,
-      gedung: props.room.gedung,
-      lab: props.room.name,
-      jam_mulai: jamMulai.value,
-      jam_selesai: jamSelesai.value
-    }
+    // Gunakan FormData agar kompatibel dengan multer di backend
+    const formData = new FormData();
+    formData.append('matkul_id', selectedMatkul.value.toString());
+    formData.append('jam_mulai', jamMulai.value);
+    formData.append('jam_selesai', jamSelesai.value);
+    formData.append('kegiatan', 'Kuliah'); // Default value
 
-    await isiFormPengajuanRuanganTerjadwal(props.idPeminjaman, payload)
+    await isiFormPengajuanRuanganTerjadwal(props.idPeminjaman, formData)
     emit('submitted') 
   
 

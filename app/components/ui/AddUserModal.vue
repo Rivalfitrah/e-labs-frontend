@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Upload, X } from 'lucide-vue-next';
-
+import { Upload } from 'lucide-vue-next';
 
 const props = defineProps({
   isOpen: {
@@ -68,13 +67,6 @@ function handleNewProfileFileChange(event) {
       newProfileFile.value = null;
       emit('validation-error', validation.message);
     }
-  }
-}
-
-function removeProfileImage() {
-  newProfileFile.value = null;
-  if (newFileInput.value) {
-    newFileInput.value.value = '';
   }
 }
 
@@ -230,63 +222,6 @@ function handleSubmit() {
             </div>
           </div>
         </transition>
-
-        <!-- Foto Profil Upload dengan Preview Terintegrasi -->
-        <div class="pt-2">
-          <label for="new_profile_file_input" class="block text-sm font-medium text-gray-700 mb-2">Foto Profil
-            (Opsional)</label>
-          
-          <!-- Container dengan preview terintegrasi -->
-          <div class="relative">
-            <div
-              class="flex items-center gap-4 w-full p-4 border-2 border-gray-300 border-dashed rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-300"
-              :class="{ 'cursor-pointer': !newProfileFile }"
-              @click="!newProfileFile && newFileInput.click()">
-              
-              <!-- Preview Image atau Upload Icon -->
-              <div v-if="newProfileFile" class="relative shrink-0">
-                <img :src="newProfilePreviewUrl" alt="Pratinjau Profil"
-                  class="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 shadow-sm" />
-              </div>
-              <div v-else class="shrink-0">
-                <div class="w-20 h-20 flex items-center justify-center bg-gray-100 rounded-lg border-2 border-gray-300">
-                  <Upload class="w-8 h-8 text-gray-400" />
-                </div>
-              </div>
-
-              <!-- Text Info -->
-              <div class="flex-1 min-w-0">
-                <template v-if="newProfileFile">
-                  <p class="text-sm font-medium text-gray-700 truncate">{{ newProfileFile.name }}</p>
-                  <p class="text-xs text-gray-500 mt-1">{{ (newProfileFile.size / 1024).toFixed(2) }} KB</p>
-                  <button
-                    type="button"
-                    @click.stop="newFileInput.click()"
-                    class="text-xs text-primary hover:text-primary-dark mt-1 underline">
-                    Ganti gambar
-                  </button>
-                </template>
-                <template v-else>
-                  <p class="text-sm text-gray-600 font-medium">Klik atau seret gambar ke sini</p>
-                  <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG (Maks. 5MB)</p>
-                </template>
-              </div>
-
-              <!-- Tombol Hapus -->
-              <button
-                v-if="newProfileFile"
-                type="button"
-                @click.stop="removeProfileImage"
-                class="shrink-0 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors duration-200 shadow-md hover:shadow-lg"
-                title="Hapus gambar">
-                <X class="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          
-          <input id="new_profile_file_input" type="file" class="hidden" @change="handleNewProfileFileChange"
-            accept="image/*" ref="newFileInput" />
-        </div>
 
         <!-- Action Buttons -->
         <div class="flex justify-end space-x-3 pt-4">
