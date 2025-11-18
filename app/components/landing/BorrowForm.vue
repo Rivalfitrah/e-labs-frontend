@@ -4,6 +4,7 @@ import FlatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import { isiFormPengajuanRuanganTerjadwal } from '/lib/api/ruangan/ruanganAPI';
 import { getMatkulbyNIM } from '/lib/api/ruangan/ruanganAPI';
+import { z } from 'zod';
 
 // === TAMBAHKAN IMPORT INI ===
 import Swal from 'sweetalert2'
@@ -28,7 +29,45 @@ const selectedMatkul = ref('')
 const jamMulai = ref('')
 const jamSelesai = ref('')
 const availableMatkul = ref([])
-const isLoading = ref(false) // <-- TAMBAHKAN INI UNTUK LOADING STATE
+const isLoading = ref(false)
+
+const errors = ref({
+  jamMulai: "",
+  jamSelesai: ""
+});
+
+// Validasi Zod untuk jam mulai dan jam selesai
+const bookingSchema = z.object({
+  jamMulai: z.string().min(1, "Jam mulai harus diisi"),
+  jamSelesai: z.string().min(1, "Jam selesai harus diisi"),
+}).refine((data) => {
+  const start = new Date(data.jamMulai);
+  const startHour = start.getHours();
+  
+  // Jam mulai tidak boleh kurang dari jam 6 pagi (06:00)
+  return startHour >= 6;
+}, {
+  path: ["jamMulai"],
+  message: "Jam mulai tidak boleh kurang dari jam 06:00 pagi"
+}).refine((data) => {
+  const end = new Date(data.jamSelesai);
+  const endHour = end.getHours();
+  
+  // Jam selesai tidak boleh lebih dari jam 6 sore (18:00)
+  return endHour < 18 || (endHour === 18 && end.getMinutes() === 0);
+}, {
+  path: ["jamSelesai"],
+  message: "Jam selesai tidak boleh lebih dari jam 18:00 (6 sore)"
+}).refine((data) => {
+  const start = new Date(data.jamMulai);
+  const end = new Date(data.jamSelesai);
+  
+  // Jam selesai harus lebih besar dari jam mulai
+  return end > start;
+}, {
+  path: ["jamSelesai"],
+  message: "Jam selesai harus lebih besar dari jam mulai"
+});
 
 // === Ambil matkul (Tidak berubah) ===
 const fetchMatkul = async () => {
@@ -60,7 +99,24 @@ watch(() => props.show, (val) => {
 
 // === Submit form (INI YANG KITA MODIFIKASI) ===
 const submitForm = async () => {
-  isLoading.value = true 
+  // Reset errors
+  errors.value = { jamMulai: "", jamSelesai: "" };
+
+  // Validasi Zod SEBELUM submit
+  const result = bookingSchema.safeParse({
+    jamMulai: jamMulai.value,
+    jamSelesai: jamSelesai.value,
+  });
+
+  if (!result.success) {
+    const fieldErrors = result.error.flatten().fieldErrors;
+    errors.value.jamMulai = fieldErrors.jamMulai ? fieldErrors.jamMulai[0] : "";
+    errors.value.jamSelesai = fieldErrors.jamSelesai ? fieldErrors.jamSelesai[0] : "";
+    return; // STOP jika validasi gagal
+  }
+
+  // Jika validasi berhasil, lanjut submit
+  isLoading.value = true;
   try {
     // Gunakan FormData agar kompatibel dengan multer di backend
     const formData = new FormData();
@@ -69,23 +125,22 @@ const submitForm = async () => {
     formData.append('jam_selesai', jamSelesai.value);
     formData.append('kegiatan', 'Kuliah'); // Default value
 
-    await isiFormPengajuanRuanganTerjadwal(props.idPeminjaman, formData)
-    emit('submitted') 
-  
+    await isiFormPengajuanRuanganTerjadwal(props.idPeminjaman, formData);
+    emit('submitted');
 
   } catch (error) {
-    console.error('Gagal submit form:', error)
+    console.error('Gagal submit form:', error);
     
-    // Tampilkan SweetAlert GAGAL (ini boleh di sini)
+    // Tampilkan SweetAlert GAGAL
     Swal.fire({
       title: 'Gagal!',
       text: 'Terjadi kesalahan saat mengajukan peminjaman. Silakan coba lagi.',
       icon: 'error',
       confirmButtonText: 'Tutup'
-    })
+    });
   
   } finally {
-    isLoading.value = false 
+    isLoading.value = false;
   }
 }
 
@@ -158,6 +213,7 @@ const closeForm = () => {
             :config="{ enableTime: true, noCalendar: false, dateFormat: 'Y-m-d H:i' }"
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
           />
+          <p class="text-xs text-red-500 mt-1">{{ errors.jamMulai }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Jam Selesai</label>
@@ -166,6 +222,7 @@ const closeForm = () => {
             :config="{ enableTime: true, noCalendar: false, dateFormat: 'Y-m-d H:i' }"
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
           />
+          <p class="text-xs text-red-500 mt-1">{{ errors.jamSelesai }}</p>
         </div>
       </div>
 
