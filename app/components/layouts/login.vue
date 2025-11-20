@@ -3,24 +3,58 @@
   import { ref } from "vue";
   import { Login } from "~/lib/api/auth";
   import { Mail, Lock, Eye, EyeOff } from "lucide-vue-next";
+  import { z } from "zod";
 
   const email = ref("");
   const password = ref("");
   const loading = ref(false);
   const showPassword = ref(false);
 
+  const errors = ref({
+    email: "",
+    password: "",
+  });
+
+  const loginSchema = z.object({
+    email: z
+      .string()
+      .nonempty({ message: "Email Tidak Boleh Kosong" })
+      .email({ message: "Email tidak valid" }),
+    password: z
+      .string()
+      .min(8, { message: "Password harus minimal 8 karakter" }),
+  });
+
   const togglePassword = () => {
     showPassword.value = !showPassword.value;
   };
 
   const handleLogin = async () => {
+    // Reset error
+    errors.value = { email: "", password: "" };
+
+    // Jalankan validasi Zod
+    const result = loginSchema.safeParse({
+      email: email.value,
+      password: password.value,
+    });
+
+    // Jika gagal validasi → tampilkan error dan berhenti
+    if (!result.success) {
+      const fieldErrors = result.error.flatten().fieldErrors;
+
+      errors.value.email = fieldErrors.email?.[0] || "";
+      errors.value.password = fieldErrors.password?.[0] || "";
+
+      return; // STOP, jangan lanjut login
+    }
+
+    // Jika valid, baru proses login
     loading.value = true;
+
     try {
       const response = await Login(email.value, password.value);
-      console.log("✅ Login response:", response);
-      console.log("🍪 Backend sudah set httpOnly cookie dengan token:", response.data.token.substring(0, 30) + "...");
-      
-      // Simpan user data ke localStorage
+
       localStorage.setItem("user", JSON.stringify(response.data));
 
       await Swal.fire({
@@ -28,24 +62,15 @@
         title: "Login Berhasil",
         text: "Selamat datang di E-LABS+!",
         timer: 1500,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
 
-      console.log("🔄 Redirecting ke dashboard...");
-      
-      // Hard reload ke dashboard untuk memastikan middleware berjalan fresh
       window.location.href = "/admin/dashboard";
-      
     } catch (error) {
-      console.error("❌ Login error:", error);
-      
-      let errorMessage = "Email atau password salah. Silakan coba lagi.";
-      
-      if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
+      let errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Email atau password salah.";
 
       await Swal.fire({
         icon: "error",
@@ -72,7 +97,7 @@
 
       <form @submit.prevent="handleLogin">
         <!-- Email -->
-        <div class="mt-10 relative">
+        <div class="mt-10">
           <label for="username" class="block text-sm font-medium text-gray-700"
             >Email</label
           >
@@ -88,10 +113,11 @@
               class="block w-full px-12 py-3 border rounded-xl"
             />
           </div>
+          <p v-if="errors.email" class="text-red-600 text-sm mt-1">{{ errors.email }}</p>
         </div>
 
         <!-- Password -->
-        <div class="mt-6 relative">
+        <div class="mt-6">
           <label for="password" class="block text-sm font-medium text-gray-700"
             >Password</label
           >
@@ -118,11 +144,14 @@
               @click="togglePassword()"
             />
           </div>
+          <p v-if="errors.password" class="text-red-600 text-sm mt-1">{{ errors.password }}</p>
         </div>
 
         <p>
-          <a href="/auth/forgot-password" class="text-sm text-blue-600 hover:underline mt-4 block"
-            >Forgot Password?</a
+          <NuxtLink
+            to="/auth/forgot-password"
+            class="text-sm text-blue-600 hover:underline mt-4 block"
+            >Forgot Password?</NuxtLink
           >
         </p>
 

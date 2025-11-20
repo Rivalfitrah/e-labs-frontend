@@ -2,7 +2,7 @@
 import UiInfoBox from '~/components/ui/infoBox.vue'
 import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, CheckCircle, XCircle } from 'lucide-vue-next'
 // Pastikan path import ini benar dan file tersebut berisi fungsi getListPengajuanRuanganTerjadwal
-import { getListPengajuanRuanganTerjadwal, verifikasiPengajuanRuanganTerjadwal } from '~/lib/api/peminjaman/terjadwal/peminjamanRuangan'
+import { getListPengajuanRuanganTerjadwal, verifikasiPengajuanRuanganTerjadwal, cancelRuangan } from '~/lib/api/peminjaman/terjadwal/peminjamanRuangan'
 import { onMounted, ref, computed } from 'vue'
 import Swal from 'sweetalert2'
 import { getRuanganID } from '~/lib/api/ruangan'
@@ -153,7 +153,7 @@ async function handleReject(item) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await verifikasiPengajuanRuanganTerjadwal(item.id, 'DITOLAK');
+        await cancelRuangan(item.id, 'DITOLAK');
         Swal.fire({
           title: 'Berhasil',
           text: `Pengajuan dari ${item.user?.nama} telah ditolak.`,
@@ -181,7 +181,7 @@ function formatTime(dateTimeString) {
   if (!dateTimeString) return 'N/A';
   try {
     const date = new Date(dateTimeString);
-    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' });
+    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' });
   } catch {
     return 'Waktu Invalid';
   }
@@ -194,7 +194,7 @@ function formatDate(dateTimeString) {
   if (!dateTimeString) return 'N/A';
   try {
     const date = new Date(dateTimeString);
-    return date.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+    return date.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Jakarta' });
   } catch {
     return 'Tanggal Invalid';
   }

@@ -30,7 +30,11 @@ export const pengajuanRuanganTerjadwal = async (data: any) => {
 
 export const isiFormPengajuanRuanganTerjadwal = async (id: string, data: any) => {
   try {
-    const res = await api.patch(`/peminjaman/ruangan/terjadwal/lengkapi/${id}`, data)
+    const res = await api.patch(`/peminjaman/ruangan/terjadwal/lengkapi/${id}`, data, {
+      headers: {
+        'Content-Type': data instanceof FormData ? 'multipart/form-data' : 'application/json'
+      }
+    })
     return res.data
   } catch (error: any) {
     console.error('Error saat mengisi form pengajuan ruangan terjadwal:', error)

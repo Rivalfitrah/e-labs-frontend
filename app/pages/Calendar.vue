@@ -1,5 +1,5 @@
 <template>
-  <FullCalendar 
+  <FullCalendar
     :options="calendarOptions" 
   />
 </template>
@@ -17,7 +17,7 @@ import interactionPlugin from '@fullcalendar/interaction' // click, drag
 const events = ref([
   { title: 'Meeting', start: '2025-11-20' },
   { title: 'Workshop', start: '2025-11-22', end: '2025-11-23' }
-])
+]);
 
 const calendarOptions = ref({
   plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],

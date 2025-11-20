@@ -5,6 +5,10 @@ import { ref, computed } from 'vue';
 const selectedSchedule = ref(null);
 const isModalVisible = ref(false);
 
+  definePageMeta({
+    layout: "landing-page",
+  })
+
 
 // --- CONTOH DATA (nantinya dari API) ---
 const buildings = ref([
@@ -173,7 +177,6 @@ const selectedScheduleDetails = computed(() => {
 
 <template>
     <div class="bg-[#F6FBF6] min-h-screen">
-        <TheNavbar />
         <div class="p-8">
             <!-- ================================== -->
             <div class="mb-6 text-center">
