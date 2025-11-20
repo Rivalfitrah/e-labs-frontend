@@ -23,9 +23,7 @@ const newUserData = ref({
   nama: '',
   email: '',
   password: '',
-  uniqueId: '',
   roleId: 1,
-  isBlocked: false,
   NIM: null,
   NIP: null,
   semester: null,
@@ -76,9 +74,7 @@ function handleClose() {
     nama: '',
     email: '',
     password: '',
-    uniqueId: '',
     roleId: 1,
-    isBlocked: false,
     NIM: null,
     NIP: null,
     semester: null,
@@ -89,21 +85,35 @@ function handleClose() {
 }
 
 function handleSubmit() {
-  // Validasi dasar
-  if (!newUserData.value.nama || !newUserData.value.email || !newUserData.value.password || !newUserData.value.uniqueId) {
-    emit('validation-error', 'Nama, Email, Password, dan ID Unik wajib diisi.');
-    return;
+  const payload = { ...newUserData.value };
+
+  // Validasi sesuai backend
+  if (payload.roleId === 1) {
+    // Mahasiswa: wajib NIM, tidak boleh NIP
+    if (!payload.NIM) {
+      emit('validation-error', 'NIM wajib diisi untuk mahasiswa');
+      return;
+    }
+    payload.NIP = null;
+  } else {
+    // Dosen/Pengelola/Admin: wajib NIP, tidak boleh NIM
+    if (!payload.NIP) {
+      emit('validation-error', 'NIP wajib diisi untuk dosen/pengelola/admin');
+      return;
+    }
+    payload.NIM = null;
+    payload.semester = null;
+    payload.prodiId = null;
   }
 
-  // Emit data ke parent
   emit('submit', {
-    userData: newUserData.value,
+    userData: payload,
     profileFile: newProfileFile.value
   });
 
-  // Reset form setelah submit
   handleClose();
 }
+
 </script>
 
 <template>
@@ -150,15 +160,6 @@ function handleSubmit() {
           <div>
             <label for="add_nama" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
             <input id="add_nama" type="text" v-model="newUserData.nama"
-              class="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition"
-              required />
-          </div>
-
-          <!-- ID Unik (NIM/NIP) -->
-          <div>
-            <label for="add_unique_id" class="block text-sm font-medium text-gray-700 mb-1">ID Unik
-              (NIM/NIP)</label>
-            <input id="add_unique_id" type="text" v-model="newUserData.uniqueId"
               class="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition"
               required />
           </div>

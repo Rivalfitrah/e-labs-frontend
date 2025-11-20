@@ -56,26 +56,28 @@ export async function deleteUser(id: string) {
     }
 }
 
-export async function createUser(formData: any) {
-    // Token ada di httpOnly cookies, tidak perlu set Authorization header manual
-    try {
-        const response = await axios.post(
-            `${base_URL}/api/admin/users`,
-            formData,
-            {
-                withCredentials: true,
-                headers: {
-                    'Content-Type': formData instanceof FormData ? 'multipart/form-data' : 'application/json'
-                }
-            }
-        );
-        console.log('Create user response:', response.data);
-        return response.data;
-    } catch (error) {
-        console.error('Error during create user:', error);
-        throw error;
-    }
+export async function createUser(formData : any) {
+  try {
+    const isFormData = formData instanceof FormData;
+
+    const response = await axios.post(
+      `${base_URL}/api/admin/users/tambah`,
+      formData,
+      {
+        withCredentials: true,
+        headers: isFormData
+          ? { 'Content-Type': 'multipart/form-data' }
+          : { 'Content-Type': 'application/json' }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Error during create user:', error);
+    throw error;
+  }
 }
+
 
 export async function dashboardUser() {
     try {

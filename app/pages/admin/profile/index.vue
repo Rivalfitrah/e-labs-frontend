@@ -61,7 +61,7 @@ import { ref } from "vue";
 
           <div class="flex items-center gap-4">
             <div class="w-32 sm:w-36 text-gray-500 font-medium">NIM / NIP</div>
-            <div class="text-gray-800 font-semibold">{{ user?.nim || user?.nip || '-' }}</div>
+            <div class="text-gray-800 font-semibold">{{ user?.NIM || user?.NIP || '-' }}</div>
           </div>
         </div>
       </div>

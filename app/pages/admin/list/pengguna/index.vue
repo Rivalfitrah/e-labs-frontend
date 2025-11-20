@@ -360,29 +360,58 @@ async function handleProfileUpload() {
 
 async function handleAddSubmit({ userData, profileFile }) {
   // Validasi dasar
-  if (!userData.nama || !userData.email || !userData.password || !userData.uniqueId) {
-    showNotification('Nama, Email, Password, dan ID Unik wajib diisi.', 'error');
+  if (!userData.nama || !userData.email || !userData.password) {
+    showNotification('Nama, Email, dan Password wajib diisi.', 'error');
     return;
   }
 
-  const formData = new FormData();
-
-  // Append fields
-  for (const key in userData) {
-    // Cek apakah key adalah 'semester' atau 'prodiId' dan nilainya 0 atau null, jika iya, lewati
-    if ((key === 'semester' || key === 'prodiId') && (userData[key] === null || userData[key] === 0)) {
-      continue;
-    }
-    formData.append(key, userData[key] ? String(userData[key]) : '');
+  // Validasi roleId-specific
+  if (userData.roleId === 1 && !userData.NIM) {
+    showNotification('NIM wajib diisi untuk mahasiswa.', 'error');
+    return;
+  }
+  
+  if (userData.roleId !== 1 && !userData.NIP) {
+    showNotification('NIP wajib diisi untuk dosen/pengelola/admin.', 'error');
+    return;
   }
 
-  // Append image file if present
+  // Kirim sebagai JSON, bukan FormData (kecuali ada foto)
+  let payload;
+  
   if (profileFile) {
+    // Jika ada foto, gunakan FormData
+    const formData = new FormData();
+    formData.append('nama', userData.nama);
+    formData.append('email', userData.email);
+    formData.append('password', userData.password);
+    formData.append('roleId', String(userData.roleId));
+    
+    if (userData.NIM) formData.append('NIM', userData.NIM);
+    if (userData.NIP) formData.append('NIP', userData.NIP);
+    if (userData.semester) formData.append('semester', String(userData.semester));
+    if (userData.prodiId) formData.append('prodiId', String(userData.prodiId));
+    
     formData.append('foto_profile', profileFile);
+    payload = formData;
+  } else {
+    // Jika tidak ada foto, kirim JSON biasa
+    payload = {
+      nama: userData.nama,
+      email: userData.email,
+      password: userData.password,
+      roleId: userData.roleId,
+      NIM: userData.NIM || undefined,
+      NIP: userData.NIP || undefined,
+      semester: userData.semester || undefined,
+      prodiId: userData.prodiId || undefined,
+    };
   }
 
   try {
-    const response = await createUser(formData);
+    const response = await createUser(payload);
+    console.log('Create user response:', response);
+    
     const newUserDataFromApi = response.data;
 
     if (newUserDataFromApi) {
@@ -390,8 +419,11 @@ async function handleAddSubmit({ userData, profileFile }) {
       const roleInfo = roleOptions.find(r => r.value === newUserDataFromApi.roleId);
       const newUser = {
         ...newUserDataFromApi,
-        role: { id: newUserDataFromApi.roleId, nama_role: roleInfo?.name || 'mahasiswa' },
-        isBlocked: false, // Asumsi default tidak terblokir
+        role: newUserDataFromApi.role || { 
+          id: newUserDataFromApi.roleId, 
+          nama_role: roleInfo?.name || 'mahasiswa' 
+        },
+        isBlocked: false, // Default tidak terblokir
         profil: newUserDataFromApi.profil || null
       }
 
@@ -410,7 +442,8 @@ async function handleAddSubmit({ userData, profileFile }) {
 
   } catch (error) {
     console.error('❌ Gagal menambah pengguna:', error);
-    showNotification('Gagal menambah pengguna. Cek konsol.', 'error');
+    const errorMessage = error.response?.data?.message || 'Gagal menambah pengguna. Silakan coba lagi.';
+    showNotification(errorMessage, 'error');
   } finally {
     closeAddModal();
   }
