@@ -6,6 +6,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
   ssr: false,
+
   app: {
     head: {
       link: [
@@ -25,12 +26,14 @@ export default defineNuxtConfig({
       ]
     }
   },
+
   runtimeConfig: {
     public: {
       NUXT_PUBLIC_API_URL: process.env.NUXT_PUBLIC_API_URL,
       NUXT_PUBLIC_STORAGE_URL: process.env.NUXT_PUBLIC_STORAGE_URL,
     }
   },
+
   vite: {
     plugins: [
       tailwindcss(),
