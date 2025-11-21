@@ -1,8 +1,8 @@
 <script setup>
 import UiInfoBox from '~/components/ui/infoBox.vue'
-import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, CheckCircle, XCircle } from 'lucide-vue-next'
+import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, CheckCircle, XCircle, Square } from 'lucide-vue-next'
 // Pastikan path import ini benar dan file tersebut berisi fungsi getListPengajuanRuanganTerjadwal
-import { getListPengajuanRuanganTerjadwal, verifikasiPengajuanRuanganTerjadwal, cancelRuangan } from '~/lib/api/peminjaman/terjadwal/peminjamanRuangan'
+import { getListPengajuanRuanganTerjadwal, verifikasiPengajuanRuanganTerjadwal, cancelRuangan, SelesaiRuangan } from '~/lib/api/peminjaman/terjadwal/peminjamanRuangan'
 import { onMounted, ref, computed } from 'vue'
 import Swal from 'sweetalert2'
 import { getRuanganID } from '~/lib/api/ruangan'
@@ -173,6 +173,46 @@ async function handleReject(item) {
     }
   });
 }
+
+async function handleSelesai(item) {
+  Swal.fire({
+    title: 'Selesaikan Peminjaman?',
+    text: `Apakah kegiatan "${item.kegiatan}" sudah selesai dan ruangan kosong?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#f59e0b', // Warna Orange/Amber
+    confirmButtonText: 'Ya, Selesai',
+    cancelButtonText: 'Batal'
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        // Panggil API SelesaiRuangan yang sudah kamu import
+        await SelesaiRuangan(item.id); 
+        
+        Swal.fire({
+          title: 'Berhasil',
+          text: `Status peminjaman berhasil diubah menjadi SELESAI.`,
+          icon: 'success',
+          confirmButtonText: false,
+          timer: 1500
+        });
+        
+        // Refresh data tabel
+        await fetchPengajuanList();
+      } catch (error) {
+        console.error(error);
+        Swal.fire({
+          title: 'Gagal',
+          text: error.response?.data?.message || 'Gagal menyelesaikan peminjaman.',
+          icon: 'error',
+          confirmButtonText: 'Tutup'
+        });
+      }
+    }
+  });
+}
+
+
 /**
  * Memformat string tanggal/waktu ISO menjadi format jam (HH:MM)
  * Menggunakan timeZone: 'UTC' karena data JSON menggunakan Z (Zulu/UTC)
@@ -418,6 +458,11 @@ watch(paginatedPengajuan, () => {
                     class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center flex-shrink-0"
                     title="Tolak Pengajuan">
                     <XCircle class="w-4 h-4" />
+                  </button>
+                  <button v-if="data.status === 'DISETUJUI'" @click="handleSelesai(data)"
+                    class="bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center flex-shrink-0"
+                    title="Tandai Selesai (Early Release)">
+                    <Square class="w-4 h-4 fill-current" /> 
                   </button>
                 </div>
               </td>

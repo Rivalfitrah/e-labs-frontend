@@ -22,7 +22,7 @@ const loadBarang = async () => {
       name: b.nama_barang,
       stock: b.jumlah,
       imageUrl: b.foto_barang_url
-        ? `http://localhost:3000/${b.foto_barang_url}`
+        ? `http://localhost:3001/storage/${b.foto_barang_url}`
         : 'https://via.placeholder.com/300x200?text=No+Image', // fallback kalau kosong
     }));
   } catch (err) {

@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css',],
   ssr: false,
   app: {
     head: {
@@ -39,5 +39,5 @@ export default defineNuxtConfig({
   devServer: {
     port: 5137, // ganti aja sesuai keinginan (misal 4000, 8080, 5174, dll)
     host: 'localhost',
-  },
+  }
 });

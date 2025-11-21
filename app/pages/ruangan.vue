@@ -32,7 +32,8 @@ const currentBuildingData = computed(() => {
 // --- Fetching Data ---
 const fetchAndMapRuangan = async () => {
   try {
-    const ruanganData = await getAllRuangan();
+    const ruanganDataRaw = await getAllRuangan();
+    const ruanganData = Array.isArray(ruanganDataRaw) ? ruanganDataRaw : [];
 
     const grouped = ruanganData.reduce((acc, r) => {
       const gedung = r.gedung ?? 'Unknown';
