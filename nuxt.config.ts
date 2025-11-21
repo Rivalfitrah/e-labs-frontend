@@ -36,4 +36,8 @@ export default defineNuxtConfig({
       tailwindcss(),
     ],
   },
+  devServer: {
+    port: 5137, // ganti aja sesuai keinginan (misal 4000, 8080, 5174, dll)
+    host: 'localhost',
+  },
 });
