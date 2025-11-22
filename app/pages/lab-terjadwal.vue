@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import { jadwalRuangan } from '~/lib/api/ruangan'
 import SidebarListRuangan from '~/components/ui/SidebarLIstRuangan.vue'
+import { X, MapPin, Clock, User, BookOpen, Calendar } from 'lucide-vue-next'
 
 definePageMeta({
   layout: "landing-page",
@@ -15,6 +16,11 @@ const jadwalData = ref([])
 const isLoading = ref(true)
 const selectedDate = ref(null)
 const periodInfo = ref(null)
+
+// Tooltip state
+const showTooltip = ref(false)
+const tooltipData = ref({})
+const tooltipPosition = ref({ x: 0, y: 0 })
 
 // Fetch data jadwal ruangan menggunakan API function yang sudah ada
 const fetchRuanganData = async (tanggal = null) => {
@@ -130,6 +136,12 @@ const convertToCalendarEvents = (data) => {
 // Load data saat komponen dimount
 onMounted(() => {
   fetchRuanganData()
+  // Add click listener for closing tooltip
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 
 const calendarOptions = ref({
@@ -158,20 +170,58 @@ function handleEventClick(info) {
   const event = info.event
   const props = event.extendedProps
   
-  alert(`Kegiatan: ${event.title}
-Tanggal: ${new Date(event.start).toLocaleDateString('id-ID', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  })}
-Ruangan: ${props.ruangan}
-Gedung: ${props.gedung}
-Waktu: ${props.waktu}
-Peminjam: ${props.peminjam} (${props.nim})
-Mata Kuliah: ${props.matkul} (Semester ${props.semester})
-Status: ${props.status}
-Loop: ${props.isLoop ? 'Ya' : 'Tidak'}`)
+  // Get click position
+  const rect = info.el.getBoundingClientRect()
+  const windowWidth = window.innerWidth
+  const tooltipWidth = 320 // Estimated tooltip width
+  
+  // Calculate position to prevent overflow
+  let xPosition = rect.left + window.scrollX + rect.width / 2
+  if (xPosition + tooltipWidth / 2 > windowWidth) {
+    xPosition = windowWidth - tooltipWidth - 20
+  } else if (xPosition - tooltipWidth / 2 < 20) {
+    xPosition = tooltipWidth / 2 + 20
+  }
+  
+  tooltipPosition.value = {
+    x: xPosition,
+    y: rect.top + window.scrollY - 10
+  }
+  
+  // Set tooltip data
+  tooltipData.value = {
+    title: event.title,
+    date: new Date(event.start).toLocaleDateString('id-ID', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }),
+    ruangan: props.ruangan,
+    gedung: props.gedung,
+    waktu: props.waktu,
+    peminjam: props.peminjam,
+    nim: props.nim,
+    matkul: props.matkul,
+    semester: props.semester,
+    status: props.status,
+    isLoop: props.isLoop,
+    backgroundColor: event.backgroundColor
+  }
+  
+  showTooltip.value = true
+}
+
+function closeTooltip() {
+  showTooltip.value = false
+}
+
+// Close tooltip when clicking outside
+function handleClickOutside(event) {
+  const tooltip = document.querySelector('.event-tooltip')
+  if (tooltip && !tooltip.contains(event.target)) {
+    showTooltip.value = false
+  }
 }
 
 // Computed untuk data yang akan dikirim ke sidebar
@@ -203,22 +253,29 @@ const jadwalSummary = computed(() => {
     ruangan_terpakai: uniqueRuangan.size
   }
 })
+
+// Get status badge style
+function getStatusStyle(status) {
+  switch (status) {
+    case 'BERLANGSUNG':
+      return 'bg-green-100 text-green-800 border border-green-200'
+    case 'DISETUJUI':
+      return 'bg-blue-100 text-blue-800 border border-blue-200'
+    case 'PENDING':
+      return 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+    case 'DITOLAK':
+      return 'bg-red-100 text-red-800 border border-red-200'
+    case 'SELESAI':
+      return 'bg-gray-100 text-gray-800 border border-gray-200'
+    default:
+      return 'bg-gray-100 text-gray-800 border border-gray-200'
+  }
+}
 </script>
 
 <template>
-  <div class="py-10 min-h-screen bg-gray-50">
+  <div class="py-10 min-h-screen bg-gray-50 relative">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <!-- <h1 class="font-bold text-3xl mb-8 text-center text-gray-800">Lab Terjadwal</h1> -->
-
-      <!-- Period Info -->
-      <!-- <div v-if="periodInfo" class="mb-4 text-center">
-        <p class="text-gray-600">
-          Periode: {{ new Date(periodInfo.start).toLocaleDateString('id-ID') }} - 
-          {{ new Date(periodInfo.end).toLocaleDateString('id-ID') }}
-          ({{ periodInfo.month }}/{{ periodInfo.year }})
-        </p>
-      </div> -->
-
       <!-- Summary Cards -->
       <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div class="bg-white rounded-lg shadow-md p-4 text-center">
@@ -288,5 +345,108 @@ const jadwalSummary = computed(() => {
         </div>
       </div>
     </div>
+
+    <!-- Event Tooltip Bubble -->
+    <Transition
+      enter-active-class="transition-all duration-300 ease-out"
+      enter-from-class="opacity-0 scale-95 translate-y-2"
+      enter-to-class="opacity-100 scale-100 translate-y-0"
+      leave-active-class="transition-all duration-200 ease-in"
+      leave-from-class="opacity-100 scale-100 translate-y-0"
+      leave-to-class="opacity-0 scale-95 translate-y-2"
+    >
+      <div
+        v-if="showTooltip"
+        class="event-tooltip fixed z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-5 w-80"
+        :style="{
+          left: tooltipPosition.x - 160 + 'px',
+          top: tooltipPosition.y - 10 + 'px',
+          transform: 'translateY(-100%)'
+        }"
+      >
+        <!-- Arrow pointing down -->
+        <div class="absolute top-full left-1/2 transform -translate-x-1/2">
+          <div class="w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white"></div>
+          <div class="absolute -top-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-gray-200"></div>
+        </div>
+
+        <!-- Close button -->
+        <button
+          @click="closeTooltip"
+          class="absolute top-3 right-3 p-1 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <X class="w-4 h-4 text-gray-500" />
+        </button>
+
+        <!-- Header -->
+        <div class="mb-4 pr-8">
+          <h3 class="font-bold text-gray-800 text-base leading-tight">{{ tooltipData.title }}</h3>
+          <div class="flex items-center gap-1 mt-1">
+            <Calendar class="w-3 h-3 text-gray-500" />
+            <span class="text-xs text-gray-600">{{ tooltipData.date }}</span>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="space-y-3 text-sm">
+          <!-- Location -->
+          <div class="flex items-start gap-2">
+            <MapPin class="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="font-medium text-gray-700">{{ tooltipData.ruangan }}</p>
+              <p class="text-gray-500 text-xs">{{ tooltipData.gedung }}</p>
+            </div>
+          </div>
+
+          <!-- Time -->
+          <div class="flex items-center gap-2">
+            <Clock class="w-4 h-4 text-gray-500" />
+            <span class="text-gray-700">{{ tooltipData.waktu }}</span>
+          </div>
+
+          <!-- User -->
+          <div class="flex items-center gap-2">
+            <User class="w-4 h-4 text-gray-500" />
+            <span class="text-gray-700">{{ tooltipData.peminjam }} ({{ tooltipData.nim }})</span>
+          </div>
+
+          <!-- Course -->
+          <div class="flex items-start gap-2">
+            <BookOpen class="w-4 h-4 text-gray-500 mt-0.5" />
+            <div>
+              <p class="font-medium text-gray-700">{{ tooltipData.matkul }}</p>
+              <p class="text-gray-500 text-xs">Semester {{ tooltipData.semester }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+          <span
+            class="px-3 py-1 rounded-full text-xs font-medium"
+            :class="getStatusStyle(tooltipData.status)"
+          >
+            {{ tooltipData.status }}
+          </span>
+          <div v-if="tooltipData.isLoop" class="flex items-center gap-1">
+            <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <span class="text-xs text-gray-500">Berulang</span>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
+
+<style scoped>
+/* Additional styles for calendar */
+:deep(.fc-event) {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+:deep(.fc-event:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+</style>
