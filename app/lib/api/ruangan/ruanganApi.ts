@@ -63,3 +63,13 @@ export const getRuanganRealtime = async (data: any = {}) => {
     return { success: false, message: "Gagal mengambil data ruangan realtime", data: [] };
   }
 }
+
+export const getRuanganRealtimeState = async (data: any = {}) => {
+  try {
+    const res = await api.get(`/ruangan/status/all/realtime`, data);
+    return res.data;
+  } catch (err) {
+    console.error("Error fetching ruangan realtime state:", err);
+    return { success: false, message: "Gagal mengambil data ruangan realtime state", data: [] };
+  }
+}
