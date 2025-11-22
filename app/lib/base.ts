@@ -1,6 +1,6 @@
 import axios from "axios"
 
-export const storage_URL = useRuntimeConfig().public.NUXT_PUBLIC_STORAGE_URL || 'http://localhost:3001/storage'
+export const storage_URL = useRuntimeConfig().public.NUXT_PUBLIC_STORAGE_URL || 'http://localhost:3000/storage'
 export const base_URL = useRuntimeConfig().public.NUXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 export async function logger(){

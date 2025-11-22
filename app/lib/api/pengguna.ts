@@ -224,3 +224,16 @@ export async function getDetailMatkul(id: string) {
         throw error;
     }
 }
+
+export async function importUsers(formData: any) {
+    try {
+        const response = await axios.post(`${base_URL}/api/admin/users/import?mode=all`, formData, {
+            withCredentials: true
+        });
+        console.log('Import users response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error importing users:', error);
+        throw error;
+    }
+}

@@ -1,0 +1,52 @@
+[
+  {
+    "title": "Praktikum Algoritma",
+    "date": "2025-11-22",
+    "extendedProps": {
+      "ruangan": "Lab A",
+      "waktu": "08:00 - 10:00"
+    },
+    "backgroundColor": "#3b82f6",
+    "borderColor": "#2563eb"
+  },
+  {
+    "title": "Peminjaman Rapat",
+    "date": "2025-11-25",
+    "extendedProps": {
+      "ruangan": "Lab B",
+      "waktu": "13:00 - 15:00"
+    },
+    "backgroundColor": "#10b981",
+    "borderColor": "#059669"
+  },
+  {
+    "title": "Kuliah Basis Data",
+    "date": "2025-11-23",
+    "extendedProps": {
+      "ruangan": "Lab C",
+      "waktu": "10:00 - 12:00"
+    },
+    "backgroundColor": "#f59e0b",
+    "borderColor": "#d97706"
+  },
+  {
+    "title": "Workshop AI",
+    "date": "2025-11-26",
+    "extendedProps": {
+      "ruangan": "Lab D",
+      "waktu": "14:00 - 16:00"
+    },
+    "backgroundColor": "#8b5cf6",
+    "borderColor": "#7c3aed"
+  },
+  {
+    "title": "Seminar Teknologi",
+    "date": "2025-11-27",
+    "extendedProps": {
+      "ruangan": "Aula",
+      "waktu": "09:00 - 11:00"
+    },
+    "backgroundColor": "#ec4899",
+    "borderColor": "#db2777"
+  }
+]

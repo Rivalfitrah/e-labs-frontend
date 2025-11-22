@@ -239,10 +239,10 @@ function handleViewDetail(item) {
         Menampilkan
         <span class="font-semibold">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
         sampai
-        <span class="font-semibold">{{ Math.min(currentPage * itemsPerPage, filteredBarang.length) }}</span>
+        <span class="font-semibold">{{ Math.min(currentPage * itemsPerPage, filteredLog.length) }}</span>
         dari
-        <span class="font-semibold">{{ filteredBarang.length }}</span>
-        barang
+        <span class="font-semibold">{{ filteredLog.length }}</span>
+        log
       </span>
       <nav class="flex items-center space-x-1" aria-label="Pagination">
         <button @click="goToPage(1)" :disabled="currentPage === 1"

@@ -1,11 +1,11 @@
 import axios from "axios";
 
 interface pengajuanRuanganTerjadwal {
-    nim: string;
+  nim: string;
 }
 
 const api = axios.create({
-  baseURL: "http://localhost:3001/api",
+  baseURL: "http://localhost:3000/api",
 });
 
 export const getAllRuangan = async () => {
@@ -51,5 +51,25 @@ export const getMatkulbyNIM = async (nim: string) => {
   } catch (err) {
     console.error("Error fetching matkul by NIM:", err);
     return { success: false, message: "Gagal mengambil data matkul", data: [] };
+  }
+}
+
+export const getRuanganRealtime = async (data: any = {}) => { 
+  try {
+    const res = await api.get(`/ruangan/status/realtime`, data);
+    return res.data;
+  } catch (err) {
+    console.error("Error fetching ruangan realtime:", err);
+    return { success: false, message: "Gagal mengambil data ruangan realtime", data: [] };
+  }
+}
+
+export const getRuanganRealtimeState = async (data: any = {}) => {
+  try {
+    const res = await api.get(`/ruangan/status/all/realtime`, data);
+    return res.data;
+  } catch (err) {
+    console.error("Error fetching ruangan realtime state:", err);
+    return { success: false, message: "Gagal mengambil data ruangan realtime state", data: [] };
   }
 }
