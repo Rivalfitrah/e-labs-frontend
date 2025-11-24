@@ -1,11 +1,13 @@
 import axios from "axios";
 
+// tes
+
 interface pengajuanRuanganTerjadwal {
   nim: string;
 }
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: "http://localhost:3001/api",
 });
 
 export const getAllRuangan = async () => {
