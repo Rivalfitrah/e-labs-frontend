@@ -137,7 +137,6 @@ export async function getRuanganID(id: string) {
     }
 }
 
-
 type JadwalRuanganParams = {
     bulan?: string;
     tahun?: string;

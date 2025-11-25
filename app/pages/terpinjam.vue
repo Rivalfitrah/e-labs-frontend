@@ -1,14 +1,16 @@
 <script lang="ts" setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { getRuanganRealtimeState } from '~/lib/api/ruangan/ruanganApi' 
+import { getRuanganRealtimeState } from '../lib/api/ruangan/ruanganApi' 
 import { io } from "socket.io-client";
+import { base_URL } from '../lib/base';
+
 
 definePageMeta({
   layout: "landing-page",
 })
 
 // Setup Socket
-const socket = io("http://localhost:3000");
+const socket = io(base_URL);
 
 // State
 const items = ref<any[]>([]);
