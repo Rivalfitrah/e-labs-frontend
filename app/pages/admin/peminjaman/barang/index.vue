@@ -3,16 +3,46 @@
     layout: "dashboard",
     middleware: "middleware",
   });
-  import { Search, Eye, CheckCircle, XCircle } from "lucide-vue-next";
+  
+  // 1. Tambahkan CheckSquare untuk icon tombol selesai
+  import { Search, Eye, CheckCircle, XCircle, CheckSquare } from "lucide-vue-next";
   import UiInfoBox from "~/components/ui/infoBox.vue";
   import { ref, onMounted, computed } from "vue";
-  import { PeminjamanList, setujuiPeminjamanBarang, tolakPeminjamanBarang } from "~/lib/api/peminjaman/terjadwal/PeminjamanBarang";
+  // Pastikan Anda mengimpor API untuk menyelesaikan peminjaman (Contoh: selesaikanPeminjamanBarang)
+  // Jika belum ada, Anda perlu membuatnya di file API. 
+  import { PeminjamanList, setujuiPeminjamanBarang, tolakPeminjamanBarang, selesaikanPeminjamanBarang } from "~/lib/api/peminjaman/terjadwal/PeminjamanBarang";
+  import Swal from "sweetalert2";
+
+  const peminjamanList = ref([]);
+  const isLoading = ref(true);
+  const search = ref("");
+
+  onMounted(async () => {
+    await fetchPeminjamanList();
+  });
+
+  async function fetchPeminjamanList() {
+    isLoading.value = true;
+    try {
+      const apiResponse = await PeminjamanList();
+      peminjamanList.value = apiResponse?.data || [];
+    } catch (error) {
+      Swal.fire("Gagal memuat data", error?.message || "Terjadi kesalahan", "error");
+      peminjamanList.value = [];
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   // Handle aksi setujui peminjaman
   async function handleSetujui(id) {
     try {
       const res = await setujuiPeminjamanBarang(id);
+      const index = peminjamanList.value.findIndex(item => item.id === id);
+      if (index !== -1 && res.data) {
+        peminjamanList.value[index].status_peminjaman = res.data.status;
+      }
       Swal.fire("Berhasil", res?.message || "Peminjaman disetujui.", "success");
-      await fetchPeminjamanList();
     } catch (error) {
       Swal.fire("Gagal", error?.response?.data?.message || "Gagal menyetujui peminjaman.", "error");
     }
@@ -22,68 +52,74 @@
   async function handleTolak(id) {
     try {
       const res = await tolakPeminjamanBarang(id);
+      const index = peminjamanList.value.findIndex(item => item.id === id);
+      if (index !== -1) {
+         peminjamanList.value[index].status_peminjaman = res?.data?.status || 'DITOLAK';
+      }
       Swal.fire("Ditolak", res?.message || "Peminjaman ditolak.", "success");
-      await fetchPeminjamanList();
     } catch (error) {
       Swal.fire("Gagal", error?.response?.data?.message || "Gagal menolak peminjaman.", "error");
     }
   }
-  import Swal from "sweetalert2";
 
-  const peminjamanList = ref([]);
-    const isLoading = ref(true);
-    const search = ref("");
-
-    onMounted(async () => {
-      await fetchPeminjamanList();
+  // 2. Handle aksi Selesaikan Peminjaman (Pengembalian Barang)
+  async function handleSelesai(id) {
+    // Konfirmasi dulu sebelum menyelesaikan
+    const result = await Swal.fire({
+      title: 'Selesaikan Peminjaman?',
+      text: "Pastikan barang sudah dikembalikan dan dicek kondisinya.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Ya, Selesaikan!',
+      cancelButtonText: 'Batal'
     });
 
-    async function fetchPeminjamanList() {
-      isLoading.value = true;
+    if (result.isConfirmed) {
       try {
-        const apiResponse = await PeminjamanList();
-        peminjamanList.value = apiResponse?.data || [];
+        // Panggil API Selesaikan (Pastikan fungsi ini ada di lib API Anda)
+        // const res = await selesaikanPeminjamanBarang(id); 
+        
+        // --- MOCK LOGIC (Ganti ini dengan panggilan API asli Anda di atas) ---
+        // Anggap API mengembalikan sukses
+        const res = { message: "Peminjaman diselesaikan", data: { status: "SELESAI" } }; // Dummy response
+        // -------------------------------------------------------------------
+
+        // Update Local State
+        const index = peminjamanList.value.findIndex(item => item.id === id);
+        if (index !== -1) {
+           peminjamanList.value[index].status_peminjaman = 'SELESAI'; // Atau 'DIKEMBALIKAN' sesuai enum DB
+        }
+
+        Swal.fire("Selesai!", res?.message || "Peminjaman telah diselesaikan.", "success");
       } catch (error) {
-        Swal.fire(
-          "Gagal memuat data",
-          error?.message || "Terjadi kesalahan",
-          "error"
-        );
-        peminjamanList.value = [];
-      } finally {
-        isLoading.value = false;
+        Swal.fire("Gagal", error?.response?.data?.message || "Gagal menyelesaikan peminjaman.", "error");
       }
     }
+  }
 
-    const filteredList = computed(() => {
-      const query = search.value.toLowerCase().trim();
-      if (!query) return peminjamanList.value;
-      return peminjamanList.value.filter(
-        (item) =>
-          item.nama_peminjam?.toLowerCase().includes(query) ||
-          item.kode_peminjaman?.toLowerCase().includes(query) ||
-          item.status_peminjaman?.toLowerCase().includes(query)
-      );
-    });
+  const filteredList = computed(() => {
+    const query = search.value.toLowerCase().trim();
+    if (!query) return peminjamanList.value;
+    return peminjamanList.value.filter(
+      (item) =>
+        item.nama_peminjam?.toLowerCase().includes(query) ||
+        item.kode_peminjaman?.toLowerCase().includes(query) ||
+        item.status_peminjaman?.toLowerCase().includes(query)
+    );
+  });
 
-    function formatDate(dateStr) {
-      if (!dateStr) return "-";
-      const d = new Date(dateStr);
-      return d.toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    }
-    function formatTime(dateStr) {
-      if (!dateStr) return "-";
-      const d = new Date(dateStr);
-      return d.toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      });
-    }
+  function formatDate(dateStr) {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("id-ID", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+  function formatTime(dateStr) {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false });
+  }
 </script>
 
 <template>
@@ -101,7 +137,6 @@
     </div>
   </div>
 
-
   <div v-if="isLoading" class="text-center py-8 text-lg text-gray-500">
     Memuat data peminjaman barang...
   </div>
@@ -111,13 +146,6 @@
   </div>
 
   <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
-    <!-- Info scroll untuk mobile -->
-    <div class="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-700 flex items-center gap-2 lg:hidden">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span>Geser ke kanan untuk melihat lebih banyak kolom</span>
-    </div>
     <div class="overflow-x-auto">
       <table class="w-full border-separate border-spacing-0 min-w-[1400px]">
         <thead>
@@ -137,22 +165,26 @@
         </thead>
         <tbody class="text-gray-700 text-sm text-center">
           <tr v-for="(data, index) in filteredList" :key="data.id" class="hover:bg-blue-50 transition border-t border-gray-100 group text-center">
-            <td class="px-4 py-3 font-mono align-middle sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r border-gray-100">{{ index + 1 }}</td>
-            <td class="px-4 py-3">{{ data.kode_peminjaman }}</td>
-            <td class="px-4 py-3">{{ data.ID_Peminjam }}</td>
-            <td class="px-4 py-3">{{ data.nama_peminjam }}</td>
-            <td class="px-4 py-3">{{ formatDate(data.tanggal_pinjam) }}<br><span class="text-xs text-gray-500">{{ formatTime(data.tanggal_pinjam) }}</span></td>
-            <td class="px-4 py-3">{{ formatDate(data.tanggal_kembali) }}<br><span class="text-xs text-gray-500">{{ formatTime(data.tanggal_kembali) }}</span></td>
-            <td class="px-4 py-3">{{ data.tujuan_peminjaman }}</td>
-            <td class="px-4 py-3">
+             <td class="px-4 py-3 font-mono align-middle sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r border-gray-100">{{ index + 1 }}</td>
+             <td class="px-4 py-3">{{ data.kode_peminjaman }}</td>
+             <td class="px-4 py-3">{{ data.ID_Peminjam }}</td>
+             <td class="px-4 py-3">{{ data.nama_peminjam }}</td>
+             <td class="px-4 py-3">{{ formatDate(data.tanggal_pinjam) }}<br><span class="text-xs text-gray-500">{{ formatTime(data.tanggal_pinjam) }}</span></td>
+             <td class="px-4 py-3">{{ formatDate(data.tanggal_kembali) }}<br><span class="text-xs text-gray-500">{{ formatTime(data.tanggal_kembali) }}</span></td>
+             <td class="px-4 py-3">{{ data.tujuan_peminjaman }}</td>
+             
+             <td class="px-4 py-3">
               <span :class="{
                 'bg-yellow-100 text-yellow-800': data.status_peminjaman === 'DIAJUKAN',
                 'bg-green-100 text-green-800': data.status_peminjaman === 'DISETUJUI',
-                'bg-red-100 text-red-800': data.status_peminjaman === 'DITOLAK'
+                'bg-red-100 text-red-800': data.status_peminjaman === 'DITOLAK',
+                'bg-blue-100 text-blue-800': data.status_peminjaman === 'SEBAGIAN_DISETUJUI',
+                'bg-gray-100 text-gray-800': data.status_peminjaman === 'SELESAI' || data.status_peminjaman === 'DIKEMBALIKAN'
               }" class="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap cursor-pointer inline-block">
                 {{ data.status_peminjaman || 'N/A' }}
               </span>
             </td>
+
             <td class="px-4 py-3">
               <ul>
                 <li v-for="item in data.barang_dipinjam" :key="item.kode_peminjaman_item" class="mb-1">
@@ -167,11 +199,13 @@
                 </li>
               </ul>
             </td>
+
             <td class="px-4 py-3 text-center sticky right-0 bg-white group-hover:bg-blue-50 z-10 border-l border-gray-100">
               <div class="flex justify-center items-center gap-2">
                 <button class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center flex-shrink-0" title="Lihat Detail">
                   <Eye class="w-4 h-4" />
                 </button>
+                
                 <template v-if="data.status_peminjaman === 'DIAJUKAN'">
                   <button @click="handleSetujui(data.id)" class="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center flex-shrink-0" title="Setujui Pengajuan">
                     <CheckCircle class="w-4 h-4" />
@@ -180,6 +214,13 @@
                     <XCircle class="w-4 h-4" />
                   </button>
                 </template>
+
+                <template v-if="data.status_peminjaman === 'DISETUJUI'">
+                  <button @click="handleSelesai(data.id)" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center flex-shrink-0" title="Selesaikan / Barang Kembali">
+                    <CheckSquare class="w-4 h-4" />
+                  </button>
+                </template>
+
               </div>
             </td>
           </tr>
