@@ -136,3 +136,36 @@ export async function getRuanganID(id: string) {
         throw error
     }
 }
+
+
+type JadwalRuanganParams = {
+    bulan?: string;
+    tahun?: string;
+};
+
+export async function jadwalRuangan(params: JadwalRuanganParams = {}) {
+    try {
+        let url = `${base_URL}/api/ruangan/jadwal`;
+
+        const searchParams = new URLSearchParams();
+        if (params.bulan) {
+            searchParams.append('bulan', params.bulan);
+        }
+        if (params.tahun) {
+            searchParams.append('tahun', params.tahun);
+        }
+
+        if (searchParams.toString()) {
+            url += `?${searchParams.toString()}`;
+        }
+
+        const response = await axios.get(url, {
+            withCredentials: true
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching jadwal ruangan:', error);
+        throw error;
+    }
+}
