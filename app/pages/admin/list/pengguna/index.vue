@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import Swal from 'sweetalert2';
 import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Upload, Ban, MailWarningIcon, GraduationCap, User, ShieldCheck, UserCheck, UserX } from 'lucide-vue-next';
 
-// Impor API (Asumsi path ini sudah benar di project Anda)
+// Impor API
 import {
   listUser, updateUser, deleteUser, createUser, dashboardUser, deactivatedUser,
   reactivateUser, getProdiList, giveWarning, importUsers
@@ -24,6 +24,29 @@ const isLoading = ref(true);
 const search = ref('');
 const notification = ref({ show: false, message: '', type: 'success' });
 const getProdiOptions = ref([]);
+
+// --- FUNGSI GENERATOR AVATAR OTOMATIS ---
+// Tidak perlu array localAvatars lagi. Kita gunakan API UI Avatars.
+function getAvatarForUser(userData) {
+  // 1. Cek apakah ada foto dari backend (Prioritas Utama)
+  // Field dari backend mungkin bernama 'profil', 'foto_profile', atau 'profilUrl'. Sesuaikan.
+  const backendPhoto = userData.profil || userData.profilUrl || userData.foto_profile;
+  
+  if (backendPhoto && backendPhoto !== 'null' && backendPhoto !== '') {
+    // Jika path sudah ada http (misal login google), pakai langsung
+    if (backendPhoto.startsWith('http')) return backendPhoto;
+    // Jika path file backend, gabungkan dengan storage URL
+    return `${storage_URL}/uploads/${backendPhoto}`;
+  }
+
+  // 2. Jika tidak ada foto backend, Generate Avatar berdasarkan NAMA
+  // Gunakan layanan UI Avatars (Gratis & Cepat)
+  const name = userData.nama || 'User System';
+  
+  // Format: https://ui-avatars.com/api/?name=Nama+User&background=random
+  // background=random membuat warna berbeda-beda tiap nama
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=128&bold=true`;
+}
 
 const roleOptions = [
   { value: 1, label: 'Mahasiswa', name: 'mahasiswa' },
@@ -69,18 +92,6 @@ function getStatusClass(isBlocked) {
     : 'bg-green-100 text-green-800';
 }
 
-function getProfileUrl(path) {
-  if (!path || path === 'null') {
-    return 'https://placehold.co/40x40/f1f1f1/333333?text=N/A';
-  }
-  // Jika path sudah mengandung http/https, asumsikan itu URL penuh.
-  if (path.startsWith('http') || path.startsWith('https')) {
-    return path;
-  }
-  // Jika tidak, tambahkan storage_URL
-  return `${storage_URL}/uploads/${path}`;
-}
-
 function validateFile(file) {
   if (!file.type.startsWith('image/')) {
     showNotification('File harus berupa gambar.', 'error');
@@ -96,36 +107,7 @@ function validateFile(file) {
 // --- PAGINATION & FILTERING ---
 const itemsPerPage = ref(10);
 const currentPage = ref(1);
-// PAGINATION SMART (Dinamis dengan elipsis)
-const paginationPages = computed(() => {
-  const pages = [];
-  const maxPagesToShow = 5;
-  const total = totalPages.value;
-  const current = currentPage.value;
 
-  if (total <= maxPagesToShow) {
-    for (let i = 1; i <= total; i++) pages.push(i);
-  } else {
-    pages.push(1);
-    if (current > 3) pages.push('...');
-    let start = Math.max(2, current - 1);
-    let end = Math.min(total - 1, current + 1);
-
-    if (current <= 3) end = 4;
-    if (current >= total - 2) start = total - 3;
-
-    start = Math.max(start, 2);
-    end = Math.min(end, total - 1);
-
-    for (let i = start; i <= end; i++) {
-      if (i > 1 && i < total) pages.push(i);
-    }
-
-    if (current < total - 2) pages.push('...');
-    pages.push(total);
-  }
-  return pages.filter((page, idx, arr) => page !== '...' || arr[idx - 1] !== '...');
-});
 const filteredUsers = computed(() => {
   const query = search.value.toLowerCase().trim();
   const dataArray = users.value;
@@ -162,18 +144,15 @@ function nextPage() { if (currentPage.value < totalPages.value) currentPage.valu
 async function fetchInitialData() {
   isLoading.value = true;
   try {
-    // Gabungkan semua API calls ke Promise.all
     const [userResponse, statsResponse, prodiResponse] = await Promise.all([
       listUser(),
       dashboardUser(),
       getProdiList(),
     ]);
 
-    // 1. User List
     const actualUserData = Array.isArray(userResponse) ? userResponse : (userResponse?.data || []);
     users.value = actualUserData;
 
-    // 2. Dashboard Stats
     const statsData = statsResponse?.data;
     if (statsData && typeof statsData === 'object') {
       dashboardStats.value = {
@@ -185,7 +164,6 @@ async function fetchInitialData() {
       };
     }
 
-    // 3. Prodi List
     const prodiData = prodiResponse?.data || [];
     getProdiOptions.value = prodiData.map((prodi) => ({
       value: prodi.id,
@@ -206,13 +184,10 @@ onMounted(() => {
 });
 
 // --- MODAL HANDLERS ---
-
 function openEditModal(item) {
-  // Membuat salinan dalam format yang dibutuhkan modal
   selectedUser.value = {
     ...item,
     roleId: item.role ? item.role.id : 1,
-    // Pastikan prodiId/NIM/NIP diisi dengan null jika kosong
     prodiId: item.prodiId || null,
     NIM: item.NIM || null,
     NIP: item.NIP || null,
@@ -245,7 +220,6 @@ function closeProfileModal() {
 }
 
 // --- FILE HANDLERS (MODAL) ---
-
 function handleProfileFileChange(event) {
   const file = event.target.files?.[0];
   if (file && validateFile(file)) {
@@ -255,21 +229,19 @@ function handleProfileFileChange(event) {
   }
 }
 
+// Computed khusus untuk preview di Modal Upload
 const profilePreviewUrl = computed(() => {
   if (profileFile.value) {
     return URL.createObjectURL(profileFile.value);
   }
-  return getProfileUrl(selectedUser.value.profil);
+  // Gunakan fungsi pintar juga untuk preview jika belum ada foto
+  return getAvatarForUser(selectedUser.value);
 });
-
-// --- FIELD VISIBILITY COMPUTED PROPERTIES ---
 
 const isSelectedUserMahasiswa = computed(() => selectedUser.value.roleId === 1);
 const isSelectedUserDosenPengelola = computed(() => selectedUser.value.roleId !== 1 && selectedUser.value.roleId !== undefined);
 
-
 // --- CRUD HANDLERS ---
-
 async function handleSave() {
   const newRole = roleOptions.find(r => r.value === selectedUser.value.roleId);
 
@@ -278,7 +250,6 @@ async function handleSave() {
     return;
   }
 
-  // Siapkan data yang akan dikirim (tanpa field null/undefined yang tidak relevan)
   const dataToUpdate = {
     nama: selectedUser.value.nama,
     email: selectedUser.value.email,
@@ -286,7 +257,6 @@ async function handleSave() {
     isBlocked: selectedUser.value.isBlocked,
   };
 
-  // Tambahkan field spesifik
   if (isSelectedUserMahasiswa.value) {
     dataToUpdate.NIM = selectedUser.value.NIM;
     dataToUpdate.semester = selectedUser.value.semester;
@@ -297,11 +267,8 @@ async function handleSave() {
 
   try {
     await updateUser(selectedUser.value.uniqueId, dataToUpdate);
-
-    // Update state lokal
     const index = users.value.findIndex(u => u.uniqueId === selectedUser.value.uniqueId);
     if (index !== -1) {
-      // Lakukan update dengan data baru dari modal
       Object.assign(users.value[index], {
         ...selectedUser.value,
         role: { id: newRole.value, nama_role: newRole.name },
@@ -329,16 +296,12 @@ async function handleProfileUpload() {
 
   const formData = new FormData();
   formData.append('foto_profile', profileFile.value);
-
-  // Kirim data non-file minimal untuk menghindari backend menganggap body kosong
   formData.append('roleId', selectedUser.value.roleId ? String(selectedUser.value.roleId) : '1');
 
   try {
     const response = await updateUser(selectedUser.value.uniqueId, formData);
-
-    // Asumsikan respons berisi path profil baru (misal: response.data.profil)
+    // Sesuaikan field response dari backend, misal response.data.profil
     const newProfilePath = response?.data?.profil || profileFile.value.name;
-
     const index = users.value.findIndex(u => u.uniqueId === selectedUser.value.uniqueId);
     if (index !== -1) {
       users.value[index].profil = newProfilePath;
@@ -357,15 +320,12 @@ async function handleProfileUpload() {
   }
 }
 
-
 async function handleAddSubmit({ userData, profileFile }) {
-  // Validasi dasar
   if (!userData.nama || !userData.email || !userData.password) {
     showNotification('Nama, Email, dan Password wajib diisi.', 'error');
     return;
   }
 
-  // Validasi roleId-specific
   if (userData.roleId === 1 && !userData.NIM) {
     showNotification('NIM wajib diisi untuk mahasiswa.', 'error');
     return;
@@ -376,11 +336,9 @@ async function handleAddSubmit({ userData, profileFile }) {
     return;
   }
 
-  // Kirim sebagai JSON, bukan FormData (kecuali ada foto)
   let payload;
   
   if (profileFile) {
-    // Jika ada foto, gunakan FormData
     const formData = new FormData();
     formData.append('nama', userData.nama);
     formData.append('email', userData.email);
@@ -395,7 +353,6 @@ async function handleAddSubmit({ userData, profileFile }) {
     formData.append('foto_profile', profileFile);
     payload = formData;
   } else {
-    // Jika tidak ada foto, kirim JSON biasa
     payload = {
       nama: userData.nama,
       email: userData.email,
@@ -410,12 +367,9 @@ async function handleAddSubmit({ userData, profileFile }) {
 
   try {
     const response = await createUser(payload);
-    console.log('Create user response:', response);
-    
     const newUserDataFromApi = response.data;
 
     if (newUserDataFromApi) {
-      // Update role object agar sesuai dengan data user
       const roleInfo = roleOptions.find(r => r.value === newUserDataFromApi.roleId);
       const newUser = {
         ...newUserDataFromApi,
@@ -423,14 +377,13 @@ async function handleAddSubmit({ userData, profileFile }) {
           id: newUserDataFromApi.roleId, 
           nama_role: roleInfo?.name || 'mahasiswa' 
         },
-        isBlocked: false, // Default tidak terblokir
+        isBlocked: false,
         profil: newUserDataFromApi.profil || null
       }
 
       users.value.push(newUser);
       currentPage.value = totalPages.value;
     } else {
-      // Fallback: refetch data jika respons API tidak lengkap
       await fetchInitialData();
     }
 
@@ -448,7 +401,6 @@ async function handleAddSubmit({ userData, profileFile }) {
     closeAddModal();
   }
 }
-
 
 async function confirmDelete(item) {
   const result = await Swal.fire({
@@ -470,17 +422,14 @@ async function confirmDelete(item) {
 async function handleDelete(uniqueId, nama) {
   try {
     await deleteUser(uniqueId);
-
     users.value = users.value.filter(u => u.uniqueId !== uniqueId);
     if (paginatedUsers.value.length === 0 && currentPage.value > 1) {
       currentPage.value--;
     }
-
     Swal.fire({
       title: 'Terhapus!', text: `Pengguna "${nama}" telah berhasil dihapus.`,
       icon: 'success', timer: 2000, showConfirmButton: false
     });
-
   } catch (error) {
     console.error('❌ Gagal menghapus pengguna:', error);
     Swal.fire({
@@ -491,7 +440,6 @@ async function handleDelete(uniqueId, nama) {
   }
 }
 
-// --- DEACTIVATE / REACTIVATE HANDLERS ---
 async function handleDeactivate(item) {
   const action = item.isBlocked ? 'mengaktifkan' : 'memblokir';
   const confirmTitle = item.isBlocked ? 'Aktifkan Pengguna?' : 'Blokir Pengguna?';
@@ -517,21 +465,17 @@ async function handleDeactivate(item) {
       } else {
         await deactivatedUser(item.id);
       }
-
-      // Update local state dan refetch stats
       const index = users.value.findIndex(u => u.id === item.id);
       if (index !== -1) {
         users.value[index].isBlocked = !item.isBlocked;
       }
-      await fetchInitialData(); // Ambil data stats terbaru
-
+      await fetchInitialData();
       Swal.fire({
         title: 'Berhasil!',
         text: `Pengguna "${item.nama}" berhasil di${action}an.`,
         icon: 'success',
         timer: 2000, showConfirmButton: false
       });
-
     } catch (error) {
       console.error(`❌ Gagal ${action} pengguna:`, error);
       Swal.fire({
@@ -541,11 +485,9 @@ async function handleDeactivate(item) {
   }
 }
 
-// Gabungkan handleReactivate ke handleDeactivate (toggle status) untuk DRY
 async function handleToggleBlock(item) {
   await handleDeactivate(item);
 }
-
 
 async function handleGiveWarning(user) {
   try {
@@ -562,8 +504,6 @@ async function handleGiveWarning(user) {
     if (!result.isConfirmed) return;
 
     const response = await giveWarning(user.uniqueId);
-
-    // Update totalPeringatan di array users secara lokal
     const idx = users.value.findIndex(u => u.uniqueId === user.uniqueId);
     if (idx !== -1) {
       const newCount = response?.totalPeringatan ?? (users.value[idx].totalPeringatan ?? 0) + 1;
@@ -580,13 +520,11 @@ async function handleGiveWarning(user) {
     showNotification('Gagal memberi peringatan. Cek konsol.', 'error');
   }
 }
-// ...existing code...
 
 async function handleImportFile(event) {
   const file = event.target.files?.[0];
   if (!file) return;
 
-  // Validasi ekstensi file
   const validExtensions = ['.xlsx', '.xls'];
   const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
   
@@ -600,7 +538,6 @@ async function handleImportFile(event) {
     return;
   }
 
-  // Tampilkan loading saat proses import
   Swal.fire({
     title: 'Mengupload File...',
     html: `
@@ -620,22 +557,15 @@ async function handleImportFile(event) {
   try {
     const formData = new FormData();
     formData.append('excelFile', file);
-
     await importExcelPengguna(formData);
-
-    // Reset input file
     event.target.value = '';
   } catch (error) {
     console.error('Error handling import:', error);
-    
-    // Tampilkan error jika gagal
     Swal.fire({
       icon: 'error',
       title: 'Gagal Import!',
       text: error.response?.data?.message || 'Terjadi kesalahan saat mengimport file. Silakan coba lagi.',
     });
-    
-    // Reset input file
     event.target.value = '';
   }
 }
@@ -643,11 +573,7 @@ async function handleImportFile(event) {
 async function importExcelPengguna(formData) {
   try {
     const response = await importUsers(formData);
-    
-    // Refresh data
     await fetchInitialData();
-    
-    // Tutup loading dan tampilkan success
     Swal.fire({
       icon: 'success',
       title: 'Import Berhasil!',
@@ -661,7 +587,6 @@ async function importExcelPengguna(formData) {
       showConfirmButton: true,
       confirmButtonText: 'OK'
     });
-    
     return response;
   } catch (error) {
     showNotification('Gagal import pengguna. Cek file dan format.', 'error');
@@ -670,31 +595,11 @@ async function importExcelPengguna(formData) {
   }
 }
 
-// Fungsi Drag & Drop (Opsional, tapi sudah ada di template)
-function handleDragOver(event) {
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = 'copy';
-  }
-}
-function handleDragLeave() {
-  // Tidak ada aksi spesifik di sini
-}
-function handleDrop(event) {
-  event.preventDefault();
-  const file = event.dataTransfer?.files?.[0];
-  if (file && validateFile(file)) {
-    profileFile.value = file;
-  }
-}
-
-// Alias untuk template (gunakan dashboardStats sebagai userStats)
 const userStats = computed(() => dashboardStats.value)
 </script>
 
-
 <template>
   <div>
-    <!-- Toast Notification -->
     <transition enter-active-class="transition ease-out duration-300 transform"
       enter-from-class="opacity-0 translate-y-full" enter-to-class="opacity-100 translate-y-0"
       leave-active-class="transition ease-in duration-300 transform" leave-from-class="opacity-100 translate-y-0"
@@ -781,20 +686,16 @@ const userStats = computed(() => dashboardStats.value)
       </label>
     </div>
 
-
     <div v-if="isLoading" class="text-center py-8 text-lg text-gray-500">
       Memuat data pengguna...
     </div>
-
 
     <div v-else-if="users.length === 0"
       class="text-center py-8 text-lg text-gray-500 border border-dashed rounded-lg p-10 bg-white">
       Tidak ada data pengguna yang ditemukan.
     </div>
 
-
     <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
-      <!-- Wrapper untuk tabel dengan overflow horizontal -->
       <div class="overflow-x-auto">
         <table class="w-full table-fixed border-separate border-spacing-0 min-w-max">
           <thead>
@@ -821,7 +722,7 @@ const userStats = computed(() => dashboardStats.value)
               </td>
               <td class="px-3 py-3 align-middle">
                 <div class="w-8 h-8 rounded-full overflow-hidden border border-gray-300 shrink-0 mx-auto">
-                  <img :src="getProfileUrl(`${storage_URL}/uploads/${data.profilUrl}`)" alt="Foto Profil"
+                  <img :src="getAvatarForUser(data)" alt="Foto Profil"
                     class="w-full h-full object-cover"
                     onerror="this.onerror=null;this.src='https://placehold.co/32x32/f1f1f1/333333?text=N/A';" />
                 </div>
@@ -906,14 +807,11 @@ const userStats = computed(() => dashboardStats.value)
         </table>
       </div>
 
-      <!-- Pagination Component -->
       <UiPagination :current-page="currentPage" :total-pages="totalPages" :total-items="filteredUsers.length"
         :items-per-page="itemsPerPage" item-label="pengguna" @previous="prevPage" @next="nextPage"
         @go-to-page="goToPage" />
     </div>
 
-
-    <!-- Edit User Modal -->
     <div v-if="isEditModalOpen"
       class="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
       @click.self="closeEditModal">
@@ -936,7 +834,6 @@ const userStats = computed(() => dashboardStats.value)
 
         <form v-if="selectedUser" @submit.prevent="handleSave" class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
-            <!-- Nama -->
             <div>
               <label for="modal_nama" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
               <input id="modal_nama" type="text" v-model="selectedUser.nama"
@@ -944,7 +841,6 @@ const userStats = computed(() => dashboardStats.value)
                 required />
             </div>
 
-            <!-- Email -->
             <div>
               <label for="modal_email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input id="modal_email" type="email" v-model="selectedUser.email"
@@ -952,7 +848,6 @@ const userStats = computed(() => dashboardStats.value)
                 required />
             </div>
           </div>
-          <!-- Role -->
           <div>
             <label for="modal_role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
             <select id="modal_role" v-model.number="selectedUser.roleId"
@@ -963,11 +858,9 @@ const userStats = computed(() => dashboardStats.value)
               </option>
             </select>
           </div>
-          <!-- FIELD SPESIFIK MAHASISWA -->
           <div v-if="isSelectedUserMahasiswa" class="space-y-4 pt-2 border-t border-gray-100">
             <h4 class="text-md font-semibold text-gray-800">Detail Mahasiswa</h4>
             <div class="grid grid-cols-2 gap-4">
-              <!-- NIM -->
               <div>
                 <label for="modal_nim" class="block text-sm font-medium text-gray-700 mb-1">NIM</label>
                 <input id="modal_nim" type="text" v-model="selectedUser.NIM"
@@ -975,7 +868,6 @@ const userStats = computed(() => dashboardStats.value)
                   required />
               </div>
 
-              <!-- Semester -->
               <div>
                 <label for="modal_semester" class="block text-sm font-medium text-gray-700 mb-1">Semester</label>
                 <input id="modal_semester" type="number" v-model.number="selectedUser.semester"
@@ -983,7 +875,6 @@ const userStats = computed(() => dashboardStats.value)
                   min="1" />
               </div>
             </div>
-            <!-- Prodi -->
             <div>
               <label for="modal_prodi" class="block text-sm font-medium text-gray-700 mb-1">Program Studi
                 (Prodi)</label>
@@ -997,11 +888,9 @@ const userStats = computed(() => dashboardStats.value)
             </div>
           </div>
 
-          <!-- FIELD SPESIFIK DOSEN/PENGELOLA -->
           <div v-else-if="isSelectedUserDosenPengelola" class="space-y-4 pt-2 border-t border-gray-100">
             <h4 class="text-md font-semibold text-gray-800">Detail Dosen/Staf</h4>
             <div class="grid grid-cols-1 gap-4">
-              <!-- NIP -->
               <div>
                 <label for="modal_nip" class="block text-sm font-medium text-gray-700 mb-1">NIP</label>
                 <input id="modal_nip" type="text" v-model="selectedUser.NIP"
@@ -1010,7 +899,6 @@ const userStats = computed(() => dashboardStats.value)
               </div>
             </div>
           </div>
-          <!-- Status Blocked -->
           <div class="flex items-center space-x-2 mt-6">
             <input id="modal_blocked" type="checkbox" v-model="selectedUser.isBlocked"
               class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500" />
@@ -1031,9 +919,35 @@ const userStats = computed(() => dashboardStats.value)
       </div>
     </div>
 
-    <!-- Tambah User Modal -->
     <AddUserModal :is-open="isAddModalOpen" :role-options="roleOptions" :prodi-options="getProdiOptions"
       @close="closeAddModal" @submit="handleAddSubmit" @validation-error="showNotification($event, 'error')" />
+      
+    <div v-if="isProfileModalOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300"
+      @click.self="closeProfileModal">
+      <div class="absolute inset-0 bg-black opacity-50"></div>
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 relative" @click.stop>
+         <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Ubah Foto Profil</h2>
+         <div class="flex flex-col items-center mb-4">
+            <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-primary mb-4 relative group">
+               <img :src="profilePreviewUrl" alt="Preview" class="w-full h-full object-cover">
+               <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer" @click="$refs.profileInput.click()">
+                 <span class="text-white text-xs font-semibold">Ganti</span>
+               </div>
+            </div>
+            <p class="text-sm font-semibold text-gray-700">{{ selectedUser.nama }}</p>
+            <p class="text-xs text-gray-500">{{ selectedUser.email }}</p>
+         </div>
+
+         <input type="file" ref="profileInput" class="hidden" accept="image/*" @change="handleProfileFileChange">
+
+         <div class="flex justify-between space-x-3">
+            <button @click="closeProfileModal" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 text-sm font-medium">Batal</button>
+            <button @click="handleProfileUpload" :disabled="!profileFile" :class="{'opacity-50 cursor-not-allowed': !profileFile}" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-green-700 text-sm font-medium">Simpan</button>
+         </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
