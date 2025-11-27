@@ -1,21 +1,40 @@
 <script setup>
 import UiInfoBox from '~/components/ui/infoBox.vue'
-import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, CheckCircle, XCircle, Square } from 'lucide-vue-next'
-// Pastikan path import ini benar dan file tersebut berisi fungsi getListPengajuanRuanganTerjadwal
+import { 
+  Search, 
+  Pencil, 
+  Trash2, 
+  ChevronLeft, 
+  ChevronRight, 
+  Eye, 
+  CheckCircle, 
+  XCircle, 
+  Square,
+  Calendar, // Icon untuk Total
+  Clock,    // Icon untuk Pending
+} from 'lucide-vue-next'
+
 import { getListPengajuanRuanganTerjadwal, verifikasiPengajuanRuanganTerjadwal, cancelRuangan, SelesaiRuangan } from '~/lib/api/peminjaman/terjadwal/peminjamanRuangan'
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue' // pastikan watch diimport
 import Swal from 'sweetalert2'
 import { getRuanganID } from '~/lib/api/ruangan'
+
 definePageMeta({
   layout: 'dashboard',
   middleware: 'middleware'
 })
 
 // --- State for Data (Pengajuan) ---
-const pengajuanList = ref([]) // Mengganti 'ruangan' menjadi 'pengajuanList'
+const pengajuanList = ref([]) 
 const isLoading = ref(true)
 
-// Hapus semua state terkait QR Code (isGeneratingQR, qrLoadingIds, setQRLoading) dan Modals (isEditModalOpen, isAddModalOpen, selectedRuangan, newRuangan) karena halaman ini fokus pada daftar pengajuan.
+// --- State for Statistics ---
+const pengajuanStats = ref({
+  total: 0,
+  pending: 0,
+  disetujui: 0,
+  ditolak: 0
+});
 
 // State untuk notifikasi (Toast sederhana)
 const notification = ref({ show: false, message: '', type: 'success' });
@@ -27,18 +46,17 @@ function showNotification(message, type = 'success') {
   }, 3000);
 }
 
-
 // --- Pagination State ---
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const search = ref('')
 const ruanganDetailCache = ref({})
+const ruanganDetails = ref({})
+
 // --- API Fetch & Data Initialization ---
 onMounted(async () => {
   await fetchPengajuanList();
 })
-
-const ruanganDetails = ref({})
 
 async function fetchPengajuanList() {
   isLoading.value = true;
@@ -47,6 +65,30 @@ async function fetchPengajuanList() {
     // Mengambil array data dari response
     const actualData = apiResponse?.data || [];
     pengajuanList.value = actualData;
+
+    // --- HITUNG STATISTIK DARI DATA LIST ---
+    const total = actualData.length;
+    
+    // Asumsi status: 'PENDING'/'DIAJUKAN', 'DISETUJUI', 'DITOLAK'
+    const pending = actualData.filter(item => 
+      item.status === 'PENDING' || item.status === 'DIAJUKAN'
+    ).length;
+    
+    const disetujui = actualData.filter(item => 
+      item.status === 'DISETUJUI'
+    ).length;
+    
+    const ditolak = actualData.filter(item => 
+      item.status === 'DITOLAK'
+    ).length;
+
+    pengajuanStats.value = {
+      total,
+      pending,
+      disetujui,
+      ditolak
+    };
+    // ---------------------------------------
 
   } catch (error) {
     console.error('Failed to fetch scheduled room requests list:', error)
@@ -57,9 +99,7 @@ async function fetchPengajuanList() {
   }
 }
 
-
 // --- Computed Properties for Pagination & Filtering ---
-
 // 1. Filtered Data
 const filteredPengajuan = computed(() => {
   const query = search.value.toLowerCase().trim();
@@ -68,7 +108,6 @@ const filteredPengajuan = computed(() => {
   if (!query) {
     return dataArray;
   }
-  // Filter berdasarkan user.nama, kegiatan, atau status
   return dataArray.filter(item =>
     item.user?.nama?.toLowerCase().includes(query) ||
     item.kegiatan?.toLowerCase().includes(query) ||
@@ -107,9 +146,8 @@ function nextPage() {
   }
 }
 
-// --- Data Formatting Helpers ---
+// --- Action Handlers ---
 async function handleApprove(item) {
-  ``
   Swal.fire({
     title: 'Konfirmasi Persetujuan',
     text: `Anda yakin ingin MENYETUJUI pengajuan kegiatan "${item.kegiatan}" dari ${item.user?.nama}?`,
@@ -126,7 +164,7 @@ async function handleApprove(item) {
           text: `Pengajuan dari ${item.user?.nama} berhasil disetujui.`,
           icon: 'success',
           confirmButtonText: false,
-          timer: 1500 // Tutup otomatis setelah 1.5 detik
+          timer: 1500
         })
         await fetchPengajuanList();
       } catch (error) {
@@ -159,7 +197,7 @@ async function handleReject(item) {
           text: `Pengajuan dari ${item.user?.nama} telah ditolak.`,
           icon: 'success',
           confirmButtonText: false,
-          timer: 1500 // Tutup otomatis setelah 1.5 detik
+          timer: 1500
         });
         await fetchPengajuanList();
       } catch (error) {
@@ -180,15 +218,13 @@ async function handleSelesai(item) {
     text: `Apakah kegiatan "${item.kegiatan}" sudah selesai dan ruangan kosong?`,
     icon: 'question',
     showCancelButton: true,
-    confirmButtonColor: '#f59e0b', // Warna Orange/Amber
+    confirmButtonColor: '#f59e0b',
     confirmButtonText: 'Ya, Selesai',
     cancelButtonText: 'Batal'
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        // Panggil API SelesaiRuangan yang sudah kamu import
         await SelesaiRuangan(item.id); 
-        
         Swal.fire({
           title: 'Berhasil',
           text: `Status peminjaman berhasil diubah menjadi SELESAI.`,
@@ -196,8 +232,6 @@ async function handleSelesai(item) {
           confirmButtonText: false,
           timer: 1500
         });
-        
-        // Refresh data tabel
         await fetchPengajuanList();
       } catch (error) {
         console.error(error);
@@ -212,11 +246,7 @@ async function handleSelesai(item) {
   });
 }
 
-
-/**
- * Memformat string tanggal/waktu ISO menjadi format jam (HH:MM)
- * Menggunakan timeZone: 'UTC' karena data JSON menggunakan Z (Zulu/UTC)
- */
+// --- Formatting Helpers ---
 function formatTime(dateTimeString) {
   if (!dateTimeString) return 'N/A';
   try {
@@ -227,9 +257,6 @@ function formatTime(dateTimeString) {
   }
 }
 
-/**
- * Memformat string tanggal/waktu ISO menjadi format tanggal (DD/MM/YYYY)
- */
 function formatDate(dateTimeString) {
   if (!dateTimeString) return 'N/A';
   try {
@@ -240,10 +267,7 @@ function formatDate(dateTimeString) {
   }
 }
 
-// --- Dummy Action Handlers (Aksi pada pengajuan biasanya dilakukan di halaman detail) ---
-
 function handleViewDetail(item) {
-  // Di sini seharusnya ada navigasi ke halaman detail/edit pengajuan
   Swal.fire({
     title: `Detail Pengajuan #${item.id}`,
     html: `
@@ -261,11 +285,11 @@ function handleViewDetail(item) {
   });
 }
 
-/** Helper: Format dokumen badge */
 function dokumenBadge(dokumen) {
   if (!dokumen) return '';
   return `<a href="${dokumen}" target="_blank" class="underline text-blue-600 hover:text-blue-800">Download</a>`;
 }
+
 async function getRuanganDetail(ruangan_id) {
   if (!ruangan_id) return null
   if (ruanganDetailCache.value[ruangan_id]) {
@@ -281,16 +305,6 @@ async function getRuanganDetail(ruangan_id) {
   }
 }
 
-/** Helper: Format ruangan (dummy, bisa diganti dengan fetch ruangan) */
-function formatRuangan(ruangan_id) {
-  const ruanganMap = {
-    2: 'Ruang Kuliah 2',
-    3: 'Ruang Seminar 3'
-  };
-  return ruanganMap[ruangan_id] || `ID ${ruangan_id}`;
-}
-
-/** Helper: Format waktu pengajuan */
 function formatCreatedAt(createdAt) {
   if (!createdAt) return '';
   const date = new Date(createdAt);
@@ -310,7 +324,6 @@ async function ensureRuanganDetails() {
 watch(paginatedPengajuan, () => {
   ensureRuanganDetails()
 })
-
 </script>
 
 
@@ -328,31 +341,79 @@ watch(paginatedPengajuan, () => {
       </div>
     </transition>
 
+    <section class="mb-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <UiInfoBox type="total" class="hover:scale-105 transition-transform duration-200">
+          <template #title>
+            <span class="flex items-center gap-2">
+              <Calendar class="w-4 h-4 text-primary" />
+              Total Pengajuan
+            </span>
+          </template>
+          <span class="text-2xl font-bold text-primary">
+            {{ pengajuanStats.total }}
+          </span>
+        </UiInfoBox>
+
+        <UiInfoBox type="dipinjam" class="hover:scale-105 transition-transform duration-200">
+          <template #title>
+            <span class="flex items-center gap-2">
+              <Clock class="w-4 h-4 text-yellow-600" />
+              Menunggu Konfirmasi
+            </span>
+          </template>
+          <span class="text-2xl font-bold text-yellow-600">
+            {{ pengajuanStats.pending }}
+          </span>
+        </UiInfoBox>
+
+        <UiInfoBox type="tersedia" class="hover:scale-105 transition-transform duration-200">
+          <template #title>
+            <span class="flex items-center gap-2">
+              <CheckCircle class="w-4 h-4 text-green-600" />
+              Disetujui
+            </span>
+          </template>
+          <span class="text-2xl font-bold text-green-600">
+            {{ pengajuanStats.disetujui }}
+          </span>
+        </UiInfoBox>
+
+        <UiInfoBox type="rusak" class="hover:scale-105 transition-transform duration-200">
+          <template #title>
+            <span class="flex items-center gap-2">
+              <XCircle class="w-4 h-4 text-red-600" />
+              Ditolak
+            </span>
+          </template>
+          <span class="text-2xl font-bold text-red-600">
+            {{ pengajuanStats.ditolak }}
+          </span>
+        </UiInfoBox>
+
+      </div>
+    </section>
+
     <div class="flex flex-col md:flex-row md:items-center gap-2 mb-4">
       <div class="flex relative w-full">
-
         <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input type="text" v-model="search"
           class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700"
           placeholder="Cari Peminjam, Kegiatan, atau Status..." />
-
       </div>
     </div>
-
 
     <div v-if="isLoading" class="text-center py-8 text-lg text-gray-500">
       Memuat data pengajuan ruangan terjadwal...
     </div>
-
 
     <div v-else-if="pengajuanList.length === 0"
       class="text-center py-8 text-lg text-gray-500 border border-dashed rounded-lg p-10 bg-white">
       Tidak ada data pengajuan ruangan terjadwal yang ditemukan.
     </div>
 
-
     <div v-else class="shadow-xl rounded-xl overflow-hidden bg-white">
-      <!-- Info scroll untuk mobile -->
       <div
         class="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-700 flex items-center gap-2 lg:hidden">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -362,7 +423,6 @@ watch(paginatedPengajuan, () => {
         <span>Geser ke kanan untuk melihat lebih banyak kolom</span>
       </div>
 
-      <!-- Wrapper untuk scroll horizontal -->
       <div class="overflow-x-auto">
         <table class="w-full border-separate border-spacing-0 min-w-[1400px]">
           <thead>
@@ -426,8 +486,8 @@ watch(paginatedPengajuan, () => {
               </td>
               <td class="px-4 py-3 font-mono align-middle">
                 <span :class="{
-                  'bg-yellow-100 text-yellow-800': data.status === 'PENDING',
-                  'bg-green-100 text-green-800': data.status === 'DISETUJUI',
+                  'bg-yellow-100 text-yellow-800': data.status === 'PENDING' || data.status === 'DIAJUKAN',
+                  'bg-green-100 text-green-800': data.status === 'DISETUJUI' || data.status === 'SELESAI',
                   'bg-red-100 text-red-800': data.status === 'DITOLAK'
                 }" class="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap cursor-pointer inline-block"
                   :title="data.status === 'DISETUJUI' && data.responden ? 'Direspon oleh ' + data.responden.nama : ''">
@@ -449,12 +509,12 @@ watch(paginatedPengajuan, () => {
                     title="Lihat Detail">
                     <Eye class="w-4 h-4" />
                   </button>
-                  <button v-if="data.status === 'DIAJUKAN'" @click="handleApprove(data)"
+                  <button v-if="data.status === 'DIAJUKAN' || data.status === 'PENDING'" @click="handleApprove(data)"
                     class="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center flex-shrink-0"
                     title="Setujui Pengajuan">
                     <CheckCircle class="w-4 h-4" />
                   </button>
-                  <button v-if="data.status === 'DIAJUKAN'" @click="handleReject(data)"
+                  <button v-if="data.status === 'DIAJUKAN' || data.status === 'PENDING'" @click="handleReject(data)"
                     class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center flex-shrink-0"
                     title="Tolak Pengajuan">
                     <XCircle class="w-4 h-4" />
@@ -462,7 +522,7 @@ watch(paginatedPengajuan, () => {
                   <button v-if="data.status === 'DISETUJUI'" @click="handleSelesai(data)"
                     class="bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center flex-shrink-0"
                     title="Tandai Selesai (Early Release)">
-                    <Square class="w-4 h-4 fill-current" /> 
+                    <Square class="w-4 h-4 fill-current" />
                   </button>
                 </div>
               </td>
@@ -478,11 +538,8 @@ watch(paginatedPengajuan, () => {
         </table>
       </div>
 
-
       <div v-if="totalPages > 1"
         class="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
-
-
         <span class="text-sm text-gray-700">
           Menampilkan
           <span class="font-semibold">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
@@ -493,18 +550,12 @@ watch(paginatedPengajuan, () => {
           pengajuan
         </span>
 
-
         <nav class="flex items-center space-x-1" aria-label="Pagination">
-
-
           <button @click="prevPage" :disabled="currentPage === 1"
             :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
             class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-
             <ChevronLeft class="w-5 h-5" />
-
           </button>
-
 
           <div class="hidden sm:flex space-x-1">
             <button v-for="page in totalPages" :key="page" @click="goToPage(page)" :class="{
@@ -515,17 +566,13 @@ watch(paginatedPengajuan, () => {
             </button>
           </div>
 
-
           <button @click="nextPage" :disabled="currentPage === totalPages"
             :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
             class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition">
-
             <ChevronRight class="w-5 h-5" />
-
           </button>
         </nav>
       </div>
     </div>
   </div>
-
 </template>

@@ -4,18 +4,21 @@
     middleware: "middleware",
   });
 
-  // 1. Tambahkan CheckSquare untuk icon tombol selesai
   import {
     Search,
     Eye,
     CheckCircle,
     XCircle,
     CheckSquare,
+    Package,
+    Clock,
+    ChevronLeft,  // Tambahan untuk Pagination
+    ChevronRight, // Tambahan untuk Pagination
   } from "lucide-vue-next";
+  
   import UiInfoBox from "~/components/ui/infoBox.vue";
   import { ref, onMounted, computed } from "vue";
-  // Pastikan Anda mengimpor API untuk menyelesaikan peminjaman (Contoh: selesaikanPeminjamanBarang)
-  // Jika belum ada, Anda perlu membuatnya di file API.
+  
   import {
     PeminjamanList,
     setujuiPeminjamanBarang,
@@ -28,6 +31,18 @@
   const isLoading = ref(true);
   const search = ref("");
 
+  // --- PAGINATION STATE ---
+  const currentPage = ref(1);
+  const itemsPerPage = ref(10); // Batas 10 data per halaman
+
+  // State untuk Statistik
+  const stats = ref({
+    total: 0,
+    pending: 0,
+    disetujui: 0,
+    ditolak: 0
+  });
+
   onMounted(async () => {
     await fetchPeminjamanList();
   });
@@ -36,7 +51,17 @@
     isLoading.value = true;
     try {
       const apiResponse = await PeminjamanList();
-      peminjamanList.value = apiResponse?.data || [];
+      const data = apiResponse?.data || [];
+      peminjamanList.value = data;
+
+      // --- HITUNG STATISTIK ---
+      stats.value = {
+        total: data.length,
+        pending: data.filter(item => item.status_peminjaman === 'DIAJUKAN').length,
+        disetujui: data.filter(item => item.status_peminjaman === 'DISETUJUI').length,
+        ditolak: data.filter(item => item.status_peminjaman === 'DITOLAK').length,
+      };
+
     } catch (error) {
       Swal.fire(
         "Gagal memuat data",
@@ -58,6 +83,7 @@
         peminjamanList.value[index].status_peminjaman = res.data.status;
       }
       Swal.fire("Berhasil", res?.message || "Peminjaman disetujui.", "success");
+      await fetchPeminjamanList(); 
     } catch (error) {
       Swal.fire(
         "Gagal",
@@ -77,6 +103,7 @@
           res?.data?.status || "DITOLAK";
       }
       Swal.fire("Ditolak", res?.message || "Peminjaman ditolak.", "success");
+      await fetchPeminjamanList();
     } catch (error) {
       Swal.fire(
         "Gagal",
@@ -86,9 +113,8 @@
     }
   }
 
-  // 2. Handle aksi Selesaikan Peminjaman (Pengembalian Barang)
+  // Handle aksi Selesaikan Peminjaman
   async function handleSelesai(id) {
-    // Konfirmasi dulu sebelum menyelesaikan
     const result = await Swal.fire({
       title: "Selesaikan Peminjaman?",
       text: "Pastikan barang sudah dikembalikan dan dicek kondisinya.",
@@ -102,10 +128,7 @@
 
     if (result.isConfirmed) {
       try {
-        // --- PERBAIKAN DISINI ---
-
-        // 1. Panggil API Selesaikan YANG ASLI (Uncomment baris ini)
-        const res = await selesaikanPeminjamanBarang(id); // 2. Hapus bagian MOCK LOGIC / Dummy Response yang lama // const res = { message: "Peminjaman diselesaikan", ... }; // <--- INI PENYEBABNYA // Update Local State
+        const res = await selesaikanPeminjamanBarang(id);
         const index = peminjamanList.value.findIndex((item) => item.id === id);
         if (index !== -1) {
           peminjamanList.value[index].status_peminjaman = "SELESAI";
@@ -116,11 +139,9 @@
           res?.message || "Peminjaman telah diselesaikan.",
           "success"
         );
-
-        // Opsional: Fetch ulang data agar sinkron stok 100%
-        // await fetchPeminjamanList();
+        await fetchPeminjamanList();
       } catch (error) {
-        console.error(error); // Log error ke console browser untuk debug
+        console.error(error);
         Swal.fire(
           "Gagal",
           error?.response?.data?.message || "Gagal menyelesaikan peminjaman.",
@@ -130,6 +151,9 @@
     }
   }
 
+  // --- COMPUTED PROPERTIES UNTUK FILTER & PAGINATION ---
+
+  // 1. Filter Data (Search)
   const filteredList = computed(() => {
     const query = search.value.toLowerCase().trim();
     if (!query) return peminjamanList.value;
@@ -141,6 +165,38 @@
     );
   });
 
+  // 2. Total Halaman
+  const totalPages = computed(() => {
+    return Math.ceil(filteredList.value.length / itemsPerPage.value);
+  });
+
+  // 3. Data yang Ditampilkan (Sliced)
+  const paginatedList = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage.value;
+    const end = start + itemsPerPage.value;
+    return filteredList.value.slice(start, end);
+  });
+
+  // --- PAGINATION METHODS ---
+  function goToPage(page) {
+    if (page >= 1 && page <= totalPages.value) {
+      currentPage.value = page;
+    }
+  }
+
+  function prevPage() {
+    if (currentPage.value > 1) {
+      currentPage.value--;
+    }
+  }
+
+  function nextPage() {
+    if (currentPage.value < totalPages.value) {
+      currentPage.value++;
+    }
+  }
+
+  // --- FORMATTERS ---
   function formatDate(dateStr) {
     if (!dateStr) return "-";
     const d = new Date(dateStr);
@@ -162,20 +218,61 @@
 </script>
 
 <template>
-  <UiInfoBox />
+  <section class="mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <UiInfoBox type="total" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <Package class="w-4 h-4 text-primary" />
+            Total Transaksi
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-primary">{{ stats.total }}</span>
+      </UiInfoBox>
+
+      <UiInfoBox type="dipinjam" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <Clock class="w-4 h-4 text-yellow-600" />
+            Menunggu
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-yellow-600">{{ stats.pending }}</span>
+      </UiInfoBox>
+
+      <UiInfoBox type="tersedia" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <CheckCircle class="w-4 h-4 text-green-600" />
+            Sedang Dipinjam
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-green-600">{{ stats.disetujui }}</span>
+      </UiInfoBox>
+
+      <UiInfoBox type="rusak" class="hover:scale-105 transition-transform duration-200">
+        <template #title>
+          <span class="flex items-center gap-2">
+            <XCircle class="w-4 h-4 text-red-600" />
+            Ditolak
+          </span>
+        </template>
+        <span class="text-2xl font-bold text-red-600">{{ stats.ditolak }}</span>
+      </UiInfoBox>
+    </div>
+  </section>
 
   <div class="flex flex-col md:flex-row md:items-center gap-2 mb-4">
-    <div class="flex relative w-full mt-5 gap-4">
-      <Search
-        class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
-      />
+    <div class="flex relative w-full mt-2 gap-4">
+      <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
       <input
         v-model="search"
         type="text"
         class="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-700 bg-white"
         placeholder="Cari Peminjam, Kode, atau Status..."
+        @input="currentPage = 1" 
       />
-    </div>
+      </div>
   </div>
 
   <div v-if="isLoading" class="text-center py-8 text-lg text-gray-500">
@@ -193,14 +290,8 @@
     <div class="overflow-x-auto">
       <table class="w-full border-separate border-spacing-0 min-w-[1400px]">
         <thead>
-          <tr
-            class="bg-primary text-white text-center text-sm uppercase tracking-wider"
-          >
-            <th
-              class="text-center px-4 py-3 w-16 sticky left-0 bg-primary z-10"
-            >
-              No
-            </th>
+          <tr class="bg-primary text-white text-center text-sm uppercase tracking-wider">
+            <th class="text-center px-4 py-3 w-16 sticky left-0 bg-primary z-10">No</th>
             <th class="text-center px-4 py-3 min-w-[140px]">Kode Peminjaman</th>
             <th class="text-center px-4 py-3 min-w-[120px]">NIM</th>
             <th class="text-center px-4 py-3 min-w-[160px]">Nama Peminjam</th>
@@ -210,55 +301,37 @@
             <th class="text-center px-4 py-3 min-w-[120px]">Status</th>
             <th class="text-center px-4 py-3 min-w-[180px]">Nama Barang</th>
             <th class="text-center px-4 py-3 min-w-[100px]">Jumlah</th>
-            <th
-              class="text-center px-4 py-3 min-w-[120px] sticky right-0 bg-primary z-10"
-            >
-              Aksi
-            </th>
+            <th class="text-center px-4 py-3 min-w-[120px] sticky right-0 bg-primary z-10">Aksi</th>
           </tr>
         </thead>
         <tbody class="text-gray-700 text-sm text-center">
           <tr
-            v-for="(data, index) in filteredList"
+            v-for="(data, index) in paginatedList"
             :key="data.id"
             class="hover:bg-blue-50 transition border-t border-gray-100 group text-center"
           >
-            <td
-              class="px-4 py-3 font-mono align-middle sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r border-gray-100"
-            >
-              {{ index + 1 }}
+            <td class="px-4 py-3 font-mono align-middle sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r border-gray-100">
+              {{ (currentPage - 1) * itemsPerPage + index + 1 }}
             </td>
             <td class="px-4 py-3">{{ data.kode_peminjaman }}</td>
             <td class="px-4 py-3">{{ data.ID_Peminjam }}</td>
             <td class="px-4 py-3">{{ data.nama_peminjam }}</td>
             <td class="px-4 py-3">
-              {{ formatDate(data.tanggal_pinjam) }}<br /><span
-                class="text-xs text-gray-500"
-                >{{ formatTime(data.tanggal_pinjam) }}</span
-              >
+              {{ formatDate(data.tanggal_pinjam) }}<br /><span class="text-xs text-gray-500">{{ formatTime(data.tanggal_pinjam) }}</span>
             </td>
             <td class="px-4 py-3">
-              {{ formatDate(data.tanggal_kembali) }}<br /><span
-                class="text-xs text-gray-500"
-                >{{ formatTime(data.tanggal_kembali) }}</span
-              >
+              {{ formatDate(data.tanggal_kembali) }}<br /><span class="text-xs text-gray-500">{{ formatTime(data.tanggal_kembali) }}</span>
             </td>
             <td class="px-4 py-3">{{ data.tujuan_peminjaman }}</td>
 
             <td class="px-4 py-3">
               <span
                 :class="{
-                  'bg-yellow-100 text-yellow-800':
-                    data.status_peminjaman === 'DIAJUKAN',
-                  'bg-green-100 text-green-800':
-                    data.status_peminjaman === 'DISETUJUI',
-                  'bg-red-100 text-red-800':
-                    data.status_peminjaman === 'DITOLAK',
-                  'bg-blue-100 text-blue-800':
-                    data.status_peminjaman === 'SEBAGIAN_DISETUJUI',
-                  'bg-gray-100 text-gray-800':
-                    data.status_peminjaman === 'SELESAI' ||
-                    data.status_peminjaman === 'DIKEMBALIKAN',
+                  'bg-yellow-100 text-yellow-800': data.status_peminjaman === 'DIAJUKAN',
+                  'bg-green-100 text-green-800': data.status_peminjaman === 'DISETUJUI',
+                  'bg-red-100 text-red-800': data.status_peminjaman === 'DITOLAK',
+                  'bg-blue-100 text-blue-800': data.status_peminjaman === 'SEBAGIAN_DISETUJUI',
+                  'bg-gray-100 text-gray-800': data.status_peminjaman === 'SELESAI' || data.status_peminjaman === 'DIKEMBALIKAN',
                 }"
                 class="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap cursor-pointer inline-block"
               >
@@ -268,30 +341,20 @@
 
             <td class="px-4 py-3">
               <ul>
-                <li
-                  v-for="item in data.barang_dipinjam"
-                  :key="item.kode_peminjaman_item"
-                  class="mb-1"
-                >
+                <li v-for="item in data.barang_dipinjam" :key="item.kode_peminjaman_item" class="mb-1">
                   <span class="font-semibold">{{ item.nama_barang }}</span>
                 </li>
               </ul>
             </td>
             <td class="px-4 py-3">
               <ul>
-                <li
-                  v-for="item in data.barang_dipinjam"
-                  :key="item.kode_peminjaman_item"
-                  class="mb-1"
-                >
+                <li v-for="item in data.barang_dipinjam" :key="item.kode_peminjaman_item" class="mb-1">
                   <span>{{ item.jumlah }}</span>
                 </li>
               </ul>
             </td>
 
-            <td
-              class="px-4 py-3 text-center sticky right-0 bg-white group-hover:bg-blue-50 z-10 border-l border-gray-100"
-            >
+            <td class="px-4 py-3 text-center sticky right-0 bg-white group-hover:bg-blue-50 z-10 border-l border-gray-100">
               <div class="flex justify-center items-center gap-2">
                 <button
                   class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-md text-xs font-medium transition transform hover:scale-110 flex items-center justify-center flex-shrink-0"
@@ -332,5 +395,54 @@
         </tbody>
       </table>
     </div>
+
+    <div v-if="totalPages > 1" class="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
+      
+      <span class="text-sm text-gray-700">
+        Menampilkan
+        <span class="font-semibold">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
+        sampai
+        <span class="font-semibold">{{ Math.min(currentPage * itemsPerPage, filteredList.length) }}</span>
+        dari
+        <span class="font-semibold">{{ filteredList.length }}</span>
+        peminjaman
+      </span>
+
+      <nav class="flex items-center space-x-1" aria-label="Pagination">
+        <button 
+          @click="prevPage" 
+          :disabled="currentPage === 1"
+          :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
+          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition"
+        >
+          <ChevronLeft class="w-5 h-5" />
+        </button>
+
+        <div class="hidden sm:flex space-x-1">
+          <button 
+            v-for="page in totalPages" 
+            :key="page" 
+            @click="goToPage(page)" 
+            :class="{
+              'bg-primary text-white': page === currentPage,
+              'bg-white text-gray-700 hover:bg-gray-100': page !== currentPage
+            }" 
+            class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition"
+          >
+            {{ page }}
+          </button>
+        </div>
+
+        <button 
+          @click="nextPage" 
+          :disabled="currentPage === totalPages"
+          :class="{ 'opacity-50 cursor-not-allowed': currentPage === totalPages }"
+          class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-200 transition"
+        >
+          <ChevronRight class="w-5 h-5" />
+        </button>
+      </nav>
+    </div>
+
   </div>
 </template>
