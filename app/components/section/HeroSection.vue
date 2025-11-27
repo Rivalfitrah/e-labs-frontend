@@ -4,7 +4,7 @@
 
 <template>
         <section class="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
-      <div class="absolute inset-0 bg-gradient-to-br from-green-50 via-white to-blue-50 opacity-60"></div>
+      <div class="absolute inset-0 bg-gradient-to-br from-green-100 via-lime-50 to-emerald-100 opacity-70"></div>
       <div class="max-w-7xl mx-auto text-center relative z-10 py-20">
         <div class="inline-block mb-4 px-6 py-2 bg-green-100 rounded-full text-green-700 font-semibold text-sm">
           🎓 Sekolah Vokasi IPB
