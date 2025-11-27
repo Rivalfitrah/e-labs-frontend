@@ -64,9 +64,6 @@
     <CaraMenggunakan />
     <!-- Building Section -->
     <GedungSection />
-
-    <!-- Schedule Section -->
-    <Schedule />
     <!-- Form Modal (if visible) -->
     <BorrowForm
       v-if="isFormVisible"

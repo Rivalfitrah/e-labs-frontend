@@ -5,6 +5,10 @@ interface pengajuanRuanganTerjadwal {
   nim: string;
 }
 
+const api = axios.create({
+  baseURL: "http://localhost:3000/api",
+});
+
 export const getAllRuangan = async () => {
   try {
     const res = await axios.get(`${base_URL}/api/ruangan`);
@@ -79,4 +83,17 @@ export const getRuanganRealtimeState = async (data: any = {}) => {
     console.error("Error fetching ruangan realtime state:", err);
     return { success: false, message: "Gagal mengambil data ruangan realtime state", data: [] };
   }
+}
+
+export const getAvailableRuangan = async (data: any = {}) => {
+  try {
+    const res = await axios.get(`${base_URL}/api/ruangan/available`, {
+      withCredentials: true,
+      params: data
+    });
+    return res.data;
+  } catch (err) {
+    console.error("Error fetching available ruangan:", err);
+    return { success: false, message: "Gagal mengambil data ruangan tersedia", data: [] };
+  } 
 }

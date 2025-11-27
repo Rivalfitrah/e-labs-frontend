@@ -1,16 +1,13 @@
 <script setup>
-import { ref, computed, watch } from 'vue'; // 'computed' tidak terpakai, tapi saya biarkan
+import { ref, computed, watch } from 'vue';
 import FlatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import { isiFormPengajuanRuanganTerjadwal } from '@/lib/api/ruangan/ruanganApi';
 import { getMatkulbyNIM } from '@/lib/api/ruangan/ruanganApi';
 import { z } from 'zod';
-
-// === TAMBAHKAN IMPORT INI ===
 import Swal from 'sweetalert2'
 import 'sweetalert2/dist/sweetalert2.min.css'
 
-// === Props dari parent ===
 const props = defineProps({
   show: Boolean,
   nim: String,
@@ -28,23 +25,27 @@ const emit = defineEmits(['close', 'submitted'])
 const selectedMatkul = ref('')
 const jamMulai = ref('')
 const jamSelesai = ref('')
+const kegiatan = ref('') // Variabel utama untuk kegiatan
 const availableMatkul = ref([])
 const isLoading = ref(false)
 
+// Opsi dropdown kegiatan
+const opsiKegiatan = ['Kuliah', 'Praktikum'];
+
 const errors = ref({
   jamMulai: "",
-  jamSelesai: ""
+  jamSelesai: "",
+  kegiatan: "" // Tambah state error untuk kegiatan
 });
 
-// Validasi Zod untuk jam mulai dan jam selesai
+// Validasi Zod
 const bookingSchema = z.object({
   jamMulai: z.string().min(1, "Jam mulai harus diisi"),
   jamSelesai: z.string().min(1, "Jam selesai harus diisi"),
+  kegiatan: z.string().min(1, "Jenis kegiatan harus dipilih"), // Validasi kegiatan wajib
 }).refine((data) => {
   const start = new Date(data.jamMulai);
   const startHour = start.getHours();
-  
-  // Jam mulai tidak boleh kurang dari jam 6 pagi (06:00)
   return startHour >= 6;
 }, {
   path: ["jamMulai"],
@@ -52,8 +53,6 @@ const bookingSchema = z.object({
 }).refine((data) => {
   const end = new Date(data.jamSelesai);
   const endHour = end.getHours();
-  
-  // Jam selesai tidak boleh lebih dari jam 6 sore (18:00)
   return endHour < 18 || (endHour === 18 && end.getMinutes() === 0);
 }, {
   path: ["jamSelesai"],
@@ -61,20 +60,17 @@ const bookingSchema = z.object({
 }).refine((data) => {
   const start = new Date(data.jamMulai);
   const end = new Date(data.jamSelesai);
-  
-  // Jam selesai harus lebih besar dari jam mulai
   return end > start;
 }, {
   path: ["jamSelesai"],
   message: "Jam selesai harus lebih besar dari jam mulai"
 });
 
-// === Ambil matkul (Tidak berubah) ===
+// === Ambil matkul ===
 const fetchMatkul = async () => {
   if (!props.nim) return
   try {
     const res = await getMatkulbyNIM(props.nim)
-    console.log('Data matkul yang diterima:', res) 
     availableMatkul.value = res.data || [] 
   } catch (err) {
     console.error('Gagal ambil data mata kuliah:', err)
@@ -92,53 +88,46 @@ watch(
   { immediate: true }
 )
 
-// Ketika modal dibuka, ambil ulang data matkul
-watch(() => props.show, (val) => {
-  if (val) fetchMatkul()
-})
-
-// === Submit form (INI YANG KITA MODIFIKASI) ===
+// === Submit form ===
 const submitForm = async () => {
   // Reset errors
-  errors.value = { jamMulai: "", jamSelesai: "" };
+  errors.value = { jamMulai: "", jamSelesai: "", kegiatan: "" };
 
   // Validasi Zod SEBELUM submit
   const result = bookingSchema.safeParse({
     jamMulai: jamMulai.value,
     jamSelesai: jamSelesai.value,
+    kegiatan: kegiatan.value, // Masukkan kegiatan ke validasi
   });
 
   if (!result.success) {
     const fieldErrors = result.error.flatten().fieldErrors;
     errors.value.jamMulai = fieldErrors.jamMulai ? fieldErrors.jamMulai[0] : "";
     errors.value.jamSelesai = fieldErrors.jamSelesai ? fieldErrors.jamSelesai[0] : "";
+    errors.value.kegiatan = fieldErrors.kegiatan ? fieldErrors.kegiatan[0] : "";
     return; // STOP jika validasi gagal
   }
 
   // Jika validasi berhasil, lanjut submit
   isLoading.value = true;
   try {
-    // Gunakan FormData agar kompatibel dengan multer di backend
     const formData = new FormData();
     formData.append('matkul_id', selectedMatkul.value.toString());
     formData.append('jam_mulai', jamMulai.value);
     formData.append('jam_selesai', jamSelesai.value);
-    formData.append('kegiatan', 'Kuliah'); // Default value
+    formData.append('kegiatan', kegiatan.value); 
 
     await isiFormPengajuanRuanganTerjadwal(props.idPeminjaman, formData);
     emit('submitted');
 
   } catch (error) {
     console.error('Gagal submit form:', error);
-    
-    // Tampilkan SweetAlert GAGAL
     Swal.fire({
       title: 'Gagal!',
       text: 'Terjadi kesalahan saat mengajukan peminjaman. Silakan coba lagi.',
       icon: 'error',
       confirmButtonText: 'Tutup'
     });
-  
   } finally {
     isLoading.value = false;
   }
@@ -162,31 +151,30 @@ const closeForm = () => {
       <div class="space-y-3">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">NIM</label>
-          <input 
-            type="text" 
-            :value="nim" 
-            disabled
-            class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm"
-          />
+          <input type="text" :value="nim" disabled class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Gedung</label>
-          <input 
-            type="text" 
-            :value="room.gedung" 
-            disabled
-            class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm"
-          />
+          <input type="text" :value="room.gedung" disabled class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Lab</label>
-          <input 
-            type="text" 
-            :value="room.name" 
-            disabled
-            class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm"
-          />
+          <input type="text" :value="room.name" disabled class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm" />
         </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Kegiatan</label>
+        <select 
+          v-model="kegiatan"
+          class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+        >
+          <option value="" disabled>Pilih Kegiatan</option>
+          <option v-for="opsi in opsiKegiatan" :key="opsi" :value="opsi">
+            {{ opsi }}
+          </option>
+        </select>
+        <p class="text-xs text-red-500 mt-1">{{ errors.kegiatan }}</p>
       </div>
 
       <div>
@@ -229,7 +217,7 @@ const closeForm = () => {
       <button 
         type="button" 
         @click="submitForm"
-        :disabled="!selectedMatkul || !jamMulai || !jamSelesai || availableMatkul.length === 0 || isLoading" 
+        :disabled="!selectedMatkul || !jamMulai || !jamSelesai || !kegiatan || availableMatkul.length === 0 || isLoading" 
         class="mt-6 w-full px-6 py-3 bg-green-600 text-white font-bold rounded-md shadow-md hover:bg-green-700 transition duration-150 disabled:bg-gray-400 disabled:cursor-not-allowed flex justify-center items-center"
       >
         <span v-if="isLoading">

@@ -207,12 +207,14 @@ const closeForm = () => {
               
               <div>
                 <label class="block text-xs text-gray-600 mb-1">Kegiatan</label>
-                <input 
+                <select 
                   v-model="item.kegiatan" 
-                  type="text" 
-                  placeholder="Misal: Praktikum"
-                  class="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
-                />
+                  class="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
+                >
+                  <option disabled value="">Pilih Kegiatan</option>
+                  <option value="Kuliah">Kuliah</option>
+                  <option value="Praktikum">Praktikum</option>
+                </select>
               </div>
             </div>
           </div>
