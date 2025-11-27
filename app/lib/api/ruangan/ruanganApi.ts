@@ -84,3 +84,16 @@ export const getRuanganRealtimeState = async (data: any = {}) => {
     return { success: false, message: "Gagal mengambil data ruangan realtime state", data: [] };
   }
 }
+
+export const getAvailableRuangan = async (data: any = {}) => {
+  try {
+    const res = await axios.get(`${base_URL}/api/ruangan/available`, {
+      withCredentials: true,
+      params: data
+    });
+    return res.data;
+  } catch (err) {
+    console.error("Error fetching available ruangan:", err);
+    return { success: false, message: "Gagal mengambil data ruangan tersedia", data: [] };
+  } 
+}

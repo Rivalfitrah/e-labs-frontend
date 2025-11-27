@@ -3,10 +3,14 @@ import { ref, computed, onMounted } from 'vue';
 import TheNavbar from '/components/landing/TheNavbar.vue';
 import ConfirmModal from '/components/landing/ConfirmationModal.vue';
 import BorrowBarangForm from '/components/landing/BorrowBarangForm.vue';
-import { getAllBarang, pengajuanPeminjamanBarang } from '/lib/api/barang/barangApi';
+import { getAllBarang } from '/lib/api/barang/barangApi';
 import { Package, ArrowRight } from 'lucide-vue-next';
 import Swal from 'sweetalert2';
+import { storage_URL } from '~/lib/base';
 
+// --- CONFIG ---
+// Ganti port ini sesuai dengan port backend kamu (biasanya 3000 atau 3001)
+const API_BASE_URL = storage_URL; 
 // --- STATE ---
 const searchQuery = ref('');
 const items = ref([]);
@@ -22,64 +26,88 @@ const nimInput = ref('');
 
 // --- FETCH DATA DARI API ---
 const loadBarang = async () => {
+  loading.value = true;
   try {
     const res = await getAllBarang();
     const data = res.data;
 
-    console.log('Data barang dari API:', data); // Debug log
-
-    // Mapping data API ke format frontend
+    // Mapping data API ke format UI Frontend
     items.value = data.map(b => {
-      const imageUrl = b.foto_barang_url 
-        ? `http://localhost:3001/storage/${b.foto_barang_url}`
-        : 'https://via.placeholder.com/300x200?text=No+Image';
       
+      // 1. LOGIC URL GAMBAR
+      // Backend kirim: "uploads/barang/foto.jpg"
+      // Frontend ubah jadi: "http://localhost:3001/uploads/barang/foto.jpg"
+      let imageUrl = 'https://via.placeholder.com/300x200?text=No+Image';
+      
+      if (b.foto_barang_url) {
+        // Hapus slash di depan jika ada, supaya url rapi
+        const cleanPath = b.foto_barang_url.startsWith('/') 
+          ? b.foto_barang_url.slice(1) 
+          : b.foto_barang_url;
+        
+        imageUrl = `${API_BASE_URL}/${cleanPath}`;
+      }
+
+      // 2. LOGIC STATUS TERSEDIA
+      // Barang bisa dipinjam JIKA: Status di DB = 'TERSEDIA' DAN Jumlah > 0
+      const isAvailable = b.status === 'TERSEDIA' && b.jumlah > 0;
+
+      // 3. LOGIC KATEGORI
+      // Ambil nama kategori jika ada relasi, jika tidak tampilkan default
+      const namaKategori = b.kategori?.nama_kategori || 'Umum';
+
       return {
         id: b.id,
         name: b.nama_barang,
         kode: b.kode_barang,
         stock: b.jumlah,
-        kategori: b.kategori?.nama_kategori || 'Tidak ada kategori',
+        kategori: namaKategori,
         imageUrl: imageUrl,
-        status: b.jumlah > 0 ? 'Tersedia' : 'Habis',
-        imageError: false, // Flag untuk mencegah infinite loop
+        
+        // Properti untuk UI
+        isAvailable: isAvailable, 
+        statusLabel: isAvailable ? 'Tersedia' : (b.jumlah === 0 ? 'Stok Habis' : 'Tidak Tersedia'),
+        
+        imageError: false, // Flag error gambar
       };
     });
+
   } catch (err) {
     console.error('Gagal ambil data barang:', err);
-    error.value = 'Gagal memuat data barang.';
+    error.value = 'Gagal memuat data barang. Pastikan server backend menyala.';
   } finally {
     loading.value = false;
   }
 };
 
-// --- Handle Image Error ---
+// --- Handle Image Error (Fallback jika gambar rusak) ---
 const handleImageError = (item) => {
   if (!item.imageError) {
     item.imageError = true;
-    item.imageUrl = 'https://via.placeholder.com/300x200?text=No+Image';
+    item.imageUrl = 'https://via.placeholder.com/300x200?text=Gambar+Rusak';
   }
 };
 
-// --- FILTER BERDASARKAN SEARCH ---
+// --- FILTER SEARCH ---
 const filteredItems = computed(() => {
   if (!searchQuery.value) return items.value;
+  const query = searchQuery.value.toLowerCase();
   return items.value.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    item.kode?.toLowerCase().includes(searchQuery.value.toLowerCase())
+    item.name.toLowerCase().includes(query) ||
+    (item.kode && item.kode.toLowerCase().includes(query))
   );
 });
 
 // --- MODAL FUNCTIONS ---
 const openConfirmModal = (item) => {
-  if (item.status === 'Tersedia') {
+  if (item.isAvailable) {
     selectedItem.value = item;
     showModal.value = true;
   } else {
     Swal.fire({
-      icon: 'warning',
-      title: 'Barang Tidak Tersedia',
-      text: 'Stok barang ini sudah habis.',
+      icon: 'error', // Icon error lebih tegas
+      title: 'Tidak Dapat Dipinjam',
+      text: `Barang ini sedang ${item.statusLabel.toLowerCase()}.`,
     });
   }
 };
@@ -92,24 +120,17 @@ const closeConfirmModal = () => {
 const handleConfirm = async (nimPeminjam) => {
   try {
     nimInput.value = nimPeminjam;
-    
-    // Tambahkan barang ke list selectedItems
     selectedItems.value = [selectedItem.value];
     
     closeConfirmModal();
     
-    // Buka form peminjaman
+    // Delay sedikit agar transisi modal halus
     setTimeout(() => {
       showBorrowForm.value = true;
     }, 200);
 
   } catch (error) {
     console.error("Error saat konfirmasi:", error);
-    Swal.fire({
-      icon: 'error',
-      title: 'Gagal',
-      text: 'Terjadi kesalahan. Silakan coba lagi.',
-    });
   }
 };
 
@@ -120,16 +141,15 @@ const closeBorrowForm = () => {
   nimInput.value = '';
 };
 
+// Saat form peminjaman sukses disubmit
 const handleSubmitBorrow = async () => {
-  console.log("Peminjaman barang berhasil diajukan");
-  
   try {
-    await loadBarang(); // Refresh data barang
-    
+    // Refresh data barang agar stok terupdate di tampilan
+    await loadBarang(); 
     closeBorrowForm();
-    
+    Swal.fire('Berhasil', 'Pengajuan peminjaman berhasil dibuat', 'success');
   } catch (error) {
-    console.error('Gagal refresh data setelah submit:', error);
+    console.error('Gagal refresh data:', error);
   }
 };
 
@@ -146,7 +166,6 @@ onMounted(loadBarang);
     <TheNavbar />
     
     <div class="container mx-auto p-8">
-      <!-- Header Section -->
       <div class="bg-white max-w-7xl mx-auto p-8 rounded-lg shadow-md">
         <div class="text-center mb-10">
           <h1 class="text-3xl font-bold text-gray-800">Peminjaman Barang Lab</h1>
@@ -155,7 +174,6 @@ onMounted(loadBarang);
           </p>
         </div>
 
-        <!-- SEARCH BAR -->
         <div class="mb-8 max-w-lg mx-auto">
           <div class="relative">
             <span class="absolute inset-y-0 left-0 flex items-center pl-4">
@@ -168,26 +186,24 @@ onMounted(loadBarang);
               v-model="searchQuery"
               type="text"
               placeholder="Cari barang berdasarkan nama atau kode..."
-              class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
             />
           </div>
         </div>
 
-        <!-- LOADING STATE -->
         <div v-if="loading" class="text-center py-16">
           <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-green-500"></div>
           <p class="text-gray-500 mt-4">Memuat data barang...</p>
         </div>
 
-        <!-- ERROR STATE -->
         <div v-else-if="error" class="text-center py-16">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-red-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p class="text-red-500 text-lg">{{ error }}</p>
+          <button @click="loadBarang" class="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition">Coba Lagi</button>
         </div>
 
-        <!-- EMPTY STATE -->
         <div v-else-if="filteredItems.length === 0" class="text-center py-16">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -195,92 +211,85 @@ onMounted(loadBarang);
           <p class="text-gray-500 text-lg">Barang tidak ditemukan</p>
         </div>
 
-        <!-- BARANG CARDS GRID -->
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div 
             v-for="item in filteredItems" 
             :key="item.id"
             @click="handleItemClick(item)"
-            class="relative bg-white rounded-xl border-2 overflow-hidden transition-all duration-300"
+            class="relative bg-white rounded-xl border-2 overflow-hidden transition-all duration-300 group"
             :class="{
-              'border-gray-200 hover:border-green-500 hover:shadow-lg cursor-pointer': item.status === 'Tersedia',
-              'border-gray-200 cursor-not-allowed opacity-60': item.status === 'Habis'
+              'border-transparent shadow hover:border-green-500 hover:shadow-xl cursor-pointer transform hover:-translate-y-1': item.isAvailable,
+              'border-gray-200 cursor-not-allowed opacity-75 grayscale': !item.isAvailable
             }"
           >
-            <!-- Status Badge - Top Right -->
             <div class="absolute top-4 right-4 z-10">
               <span 
-                class="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide shadow-md"
+                class="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm backdrop-blur-sm"
                 :class="{
-                  'bg-green-100 text-green-700 border border-green-300': item.status === 'Tersedia',
-                  'bg-red-100 text-red-700 border border-red-300': item.status === 'Habis'
+                  'bg-green-100/90 text-green-700 border border-green-200': item.isAvailable,
+                  'bg-red-100/90 text-red-700 border border-red-200': !item.isAvailable
                 }"
               >
-                {{ item.status }}
+                {{ item.statusLabel }}
               </span>
             </div>
 
-            <!-- Image Section -->
             <div class="relative h-48 bg-gray-100 overflow-hidden">
               <img 
                 :src="item.imageUrl" 
                 :alt="item.name"
-                class="w-full h-full object-cover"
+                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 @error="handleImageError(item)"
               />
             </div>
 
-            <!-- Content Section -->
-            <div class="p-6">
-              <!-- Barang Icon & Name -->
+            <div class="p-5">
               <div class="mb-4">
                 <div class="flex items-start gap-3">
-                  <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Package class="h-6 w-6 text-green-600" />
+                  <div 
+                    class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                    :class="item.isAvailable ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'"
+                  >
+                    <Package class="h-5 w-5" />
                   </div>
                   <div class="flex-1 min-w-0">
-                    <h3 class="text-lg font-bold text-gray-800 truncate">
+                    <h3 class="text-base font-bold text-gray-800 truncate leading-tight" :title="item.name">
                       {{ item.name }}
                     </h3>
-                    <p v-if="item.kode" class="text-sm text-gray-500 mt-1">
-                      Kode: {{ item.kode }}
+                    <p v-if="item.kode" class="text-xs text-gray-500 mt-1 font-mono">
+                      {{ item.kode }}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <!-- Item Details -->
-              <div class="space-y-2 mb-4">
-                <div class="flex items-center gap-2 text-sm text-gray-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                  </svg>
-                  <span>{{ item.kategori }}</span>
+              <div class="space-y-2 mb-4 border-t border-gray-100 pt-3">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-500">Kategori</span>
+                  <span class="font-medium text-gray-700 truncate max-w-[120px]">{{ item.kategori }}</span>
                 </div>
                 
-                <div class="flex items-center gap-2 text-sm text-gray-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                  <span>Stok: <strong>{{ item.stock }}</strong> unit</span>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-500">Stok</span>
+                  <span class="font-medium" :class="item.stock > 0 ? 'text-gray-700' : 'text-red-500'">
+                    {{ item.stock }} unit
+                  </span>
                 </div>
               </div>
 
-              <!-- Action Indicator -->
               <div 
-                v-if="item.status === 'Tersedia'"
-                class="flex items-center justify-between pt-4 border-t border-gray-100"
+                v-if="item.isAvailable"
+                class="flex items-center justify-center pt-3 mt-2 bg-green-50 rounded-lg py-2 text-green-700 font-medium text-sm group-hover:bg-green-600 group-hover:text-white transition-colors"
               >
-                <span class="text-sm font-medium text-gray-500">Klik untuk pinjam</span>
-                <ArrowRight class="h-5 w-5 text-gray-400" />
+                <span>Pinjam Barang</span>
+                <ArrowRight class="h-4 w-4 ml-2" />
               </div>
 
-              <!-- Unavailable Indicator -->
               <div 
                 v-else
-                class="flex items-center justify-center pt-4 border-t border-gray-100"
+                class="flex items-center justify-center pt-3 mt-2 bg-gray-50 rounded-lg py-2 text-gray-400 font-medium text-sm"
               >
-                <span class="text-sm font-medium text-gray-400">Stok habis</span>
+                <span>Tidak Tersedia</span>
               </div>
             </div>
           </div>
@@ -288,7 +297,6 @@ onMounted(loadBarang);
       </div>
     </div>
 
-    <!-- Confirmation Modal -->
     <ConfirmModal
       v-if="showModal"
       :show="showModal"
@@ -297,7 +305,6 @@ onMounted(loadBarang);
       @confirm="handleConfirm"
     />
 
-    <!-- Borrow Form Modal -->
     <BorrowBarangForm
       v-if="showBorrowForm"
       :show="showBorrowForm"

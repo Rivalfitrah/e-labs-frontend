@@ -33,8 +33,21 @@ export async function setujuiPeminjamanBarang(id: string) {
 export async function tolakPeminjamanBarang(id: string) {
     try {
         const response = await axios.patch(
-            `${base_URL}/api/admin/verifikasi/peminjaman-barang/${id}`,
+            `${base_URL}/api/admin/verifikasi/peminjaman-barang/tolak/${id}`,
             { status: "DITOLAK" },
+            { withCredentials: true }
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function selesaikanPeminjamanBarang(id: string) {
+    try {
+        const response = await axios.patch(
+            `${base_URL}/api/admin/verifikasi/peminjaman-barang/selesai/${id}`,
+            { status: "SELESAI" },
             { withCredentials: true }
         );
         return response.data;

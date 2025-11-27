@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { getRuanganRealtimeState } from '../lib/api/ruangan/ruanganApi' 
+import { getRuanganRealtimeState, getAvailableRuangan } from '../lib/api/ruangan/ruanganApi' 
 import { io } from "socket.io-client";
 import { base_URL } from '../lib/base';
 
@@ -45,8 +45,6 @@ const getRealtimeInfo = (item: any) => {
      return { text: 'KOSONG', color: 'text-green-700', bg: 'bg-green-100', countdown: '-' };
   }
 
-  // Hitung selisih waktu
-  // Pakai (item.ts_selesai || 0) biar kalau null dianggap 0
   const diff = (item.ts_selesai || 0) - now.value;
 
   // 2. KASUS EARLY RELEASE (Status SELESAI)
@@ -117,6 +115,13 @@ onMounted(async () => {
                   ? `Sampai ${formatTime(updatedRoom.currentBooking.jam_selesai_ts)}` 
                   : "-"
             };
+            
+            if (updatedRoom.status !== 'KOSONG') {
+                // Hapus dari tampilan secara realtime!
+                items.value.splice(index, 1); 
+                
+                console.log(`❌ Ruangan ${updatedRoom.nama} dihapus dari list karena sudah terisi.`);
+            }
         }
     });
 
@@ -152,7 +157,7 @@ onUnmounted(() => {
             <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Kegiatan</th>
             <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Jadwal Selesai</th>
             <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status Saat Ini</th>
-            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Hitung Mundur</th>
+            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Sisa Waktu</th>
           </tr>
         </thead>
 
