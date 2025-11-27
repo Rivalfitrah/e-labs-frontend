@@ -1,12 +1,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import TheNavbar from '/components/landing/TheNavbar.vue';
 import ConfirmModal from '/components/landing/ConfirmationModal.vue';
 import BorrowBarangForm from '/components/landing/BorrowBarangForm.vue';
 import { getAllBarang } from '/lib/api/barang/barangApi';
 import { Package, ArrowRight } from 'lucide-vue-next';
 import Swal from 'sweetalert2';
 import { storage_URL } from '~/lib/base';
+
+definePageMeta({
+  layout: "landing-page",
+});
 
 // --- CONFIG ---
 // Ganti port ini sesuai dengan port backend kamu (biasanya 3000 atau 3001)
@@ -163,7 +166,6 @@ onMounted(loadBarang);
 
 <template>
   <div class="bg-[#F6FBF6] min-h-screen">
-    <TheNavbar />
     
     <div class="container mx-auto p-8">
       <div class="bg-white max-w-7xl mx-auto p-8 rounded-lg shadow-md">

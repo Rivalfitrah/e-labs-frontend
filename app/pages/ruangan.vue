@@ -4,8 +4,11 @@ import ConfirmModal from '@/components/landing/ConfirmationModal.vue';
 import BorrowForm from '@/components/landing/BorrowForm.vue';
 import { getAllRuangan, pengajuanRuanganTerjadwal } from '@/lib/api/ruangan/ruanganApi';
 import Swal from 'sweetalert2';
-import TheNavbar from '@/components/landing/TheNavbar.vue';
 import { ArrowLeft, ArrowRight, House } from 'lucide-vue-next';
+
+definePageMeta({
+  layout: "landing-page",
+});
 
 // --- State Halaman ---
 const selectedBuildingName = ref('');
@@ -237,7 +240,6 @@ const handleCloseBorrowForm = async () => {
 
 <template>
   <div class="bg-[#F6FBF6] min-h-screen">
-    <TheNavbar />
     <div class="container mx-auto p-8">
       
       <!-- Progress Indicator -->

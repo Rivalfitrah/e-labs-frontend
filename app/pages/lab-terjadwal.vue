@@ -137,12 +137,12 @@ const convertToCalendarEvents = (data) => {
 onMounted(() => {
   fetchRuanganData()
   // Add click listener for closing tooltip
-  document.addEventListener('click', handleClickOutside)
+  // document.addEventListener('click', handleClickOutside)
 })
 
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
+// onUnmounted(() => {
+//   document.removeEventListener('click', handleClickOutside)
+// })
 
 const calendarOptions = ref({
   plugins: [dayGridPlugin, interactionPlugin],
@@ -163,7 +163,6 @@ const calendarOptions = ref({
 
 function handleDateClick(info) {
   selectedDate.value = info.dateStr
-  fetchRuanganData(info.dateStr)
 }
 
 function handleEventClick(info) {
@@ -217,12 +216,12 @@ function closeTooltip() {
 }
 
 // Close tooltip when clicking outside
-function handleClickOutside(event) {
-  const tooltip = document.querySelector('.event-tooltip')
-  if (tooltip && !tooltip.contains(event.target)) {
-    showTooltip.value = false
-  }
-}
+// function handleClickOutside(event) {
+//   const tooltip = document.querySelector('.event-tooltip')
+//   if (tooltip && !tooltip.contains(event.target)) {
+//     showTooltip.value = false
+//   }
+// }
 
 // Computed untuk data yang akan dikirim ke sidebar
 const sidebarEvents = computed(() => {

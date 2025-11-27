@@ -7,7 +7,7 @@ import Footer from '@/components/section/Footer.vue'
 <template>
     <div>
         <TheNavbar />
-        <main>
+        <main class="mt-25">
             <slot />
         </main>
         <Footer />
