@@ -1,10 +1,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import ConfirmModal from '/components/landing/ConfirmationModal.vue';
-import BorrowForm from '/components/landing/BorrowForm.vue';
-import { getAllRuangan, pengajuanRuanganTerjadwal } from '/lib/api/ruangan/ruanganAPI';
+import ConfirmModal from '@/components/landing/ConfirmationModal.vue';
+import BorrowForm from '@/components/landing/BorrowForm.vue';
+import { getAllRuangan, pengajuanRuanganTerjadwal } from '@/lib/api/ruangan/ruanganApi';
 import Swal from 'sweetalert2';
-import TheNavbar from '/components/landing/TheNavbar.vue';
+import TheNavbar from '@/components/landing/TheNavbar.vue';
 import { ArrowLeft, ArrowRight, House } from 'lucide-vue-next';
 
 // --- State Halaman ---

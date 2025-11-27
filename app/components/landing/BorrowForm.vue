@@ -2,8 +2,8 @@
 import { ref, computed, watch } from 'vue'; // 'computed' tidak terpakai, tapi saya biarkan
 import FlatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
-import { isiFormPengajuanRuanganTerjadwal } from '/lib/api/ruangan/ruanganAPI';
-import { getMatkulbyNIM } from '/lib/api/ruangan/ruanganAPI';
+import { isiFormPengajuanRuanganTerjadwal } from '@/lib/api/ruangan/ruanganApi';
+import { getMatkulbyNIM } from '@/lib/api/ruangan/ruanganApi';
 import { z } from 'zod';
 
 // === TAMBAHKAN IMPORT INI ===

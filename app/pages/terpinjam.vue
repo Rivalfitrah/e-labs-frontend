@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { getRuanganRealtimeState } from '../lib/api/ruangan/ruanganApi' 
+import { getRuanganRealtimeState } from '@/lib/api/ruangan/ruanganApi' 
 import { io } from "socket.io-client";
-import { base_URL } from '../lib/base';
+import { base_URL } from '@/lib/base';
 
 
 definePageMeta({
