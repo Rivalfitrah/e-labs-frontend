@@ -12,8 +12,8 @@
     CheckSquare,
     Package,
     Clock,
-    ChevronLeft,  // Tambahan untuk Pagination
-    ChevronRight, // Tambahan untuk Pagination
+    ChevronLeft,
+    ChevronRight,
   } from "lucide-vue-next";
   
   import UiInfoBox from "~/components/ui/infoBox.vue";
@@ -33,7 +33,7 @@
 
   // --- PAGINATION STATE ---
   const currentPage = ref(1);
-  const itemsPerPage = ref(10); // Batas 10 data per halaman
+  const itemsPerPage = ref(10); 
 
   // State untuk Statistik
   const stats = ref({
@@ -42,6 +42,18 @@
     disetujui: 0,
     ditolak: 0
   });
+
+  // --- FUNGSI HITUNG STATISTIK (DIPISAH) ---
+  // Agar bisa dipanggil ulang saat update manual tanpa fetch ke server
+  function calculateStats() {
+    const data = peminjamanList.value;
+    stats.value = {
+      total: data.length,
+      pending: data.filter(item => item.status_peminjaman === 'DIAJUKAN').length,
+      disetujui: data.filter(item => item.status_peminjaman === 'DISETUJUI').length,
+      ditolak: data.filter(item => item.status_peminjaman === 'DITOLAK').length,
+    };
+  }
 
   onMounted(async () => {
     await fetchPeminjamanList();
@@ -53,14 +65,9 @@
       const apiResponse = await PeminjamanList();
       const data = apiResponse?.data || [];
       peminjamanList.value = data;
-
-      // --- HITUNG STATISTIK ---
-      stats.value = {
-        total: data.length,
-        pending: data.filter(item => item.status_peminjaman === 'DIAJUKAN').length,
-        disetujui: data.filter(item => item.status_peminjaman === 'DISETUJUI').length,
-        ditolak: data.filter(item => item.status_peminjaman === 'DITOLAK').length,
-      };
+      
+      // Panggil fungsi hitung
+      calculateStats();
 
     } catch (error) {
       Swal.fire(
@@ -77,13 +84,23 @@
   // Handle aksi setujui peminjaman
   async function handleSetujui(id) {
     try {
+      // 1. Panggil API
       const res = await setujuiPeminjamanBarang(id);
+      
+      // 2. UPDATE STATE LOKAL (KUNCI PERBAIKAN)
+      // Langsung ubah status di array lokal tanpa menunggu fetch ulang
       const index = peminjamanList.value.findIndex((item) => item.id === id);
-      if (index !== -1 && res.data) {
-        peminjamanList.value[index].status_peminjaman = res.data.status;
+      if (index !== -1) {
+        peminjamanList.value[index].status_peminjaman = "DISETUJUI";
       }
+      
+      // 3. Update Statistik
+      calculateStats();
+
       Swal.fire("Berhasil", res?.message || "Peminjaman disetujui.", "success");
-      await fetchPeminjamanList(); 
+      
+      // 4. Fetch ulang di background (opsional, untuk memastikan data sinkron)
+      // fetchPeminjamanList(); 
     } catch (error) {
       Swal.fire(
         "Gagal",
@@ -97,13 +114,15 @@
   async function handleTolak(id) {
     try {
       const res = await tolakPeminjamanBarang(id);
+      
+      // UPDATE STATE LOKAL
       const index = peminjamanList.value.findIndex((item) => item.id === id);
       if (index !== -1) {
-        peminjamanList.value[index].status_peminjaman =
-          res?.data?.status || "DITOLAK";
+        peminjamanList.value[index].status_peminjaman = "DITOLAK";
       }
+      calculateStats();
+
       Swal.fire("Ditolak", res?.message || "Peminjaman ditolak.", "success");
-      await fetchPeminjamanList();
     } catch (error) {
       Swal.fire(
         "Gagal",
@@ -129,17 +148,19 @@
     if (result.isConfirmed) {
       try {
         const res = await selesaikanPeminjamanBarang(id);
+        
+        // UPDATE STATE LOKAL
         const index = peminjamanList.value.findIndex((item) => item.id === id);
         if (index !== -1) {
           peminjamanList.value[index].status_peminjaman = "SELESAI";
         }
+        calculateStats();
 
         Swal.fire(
           "Selesai!",
           res?.message || "Peminjaman telah diselesaikan.",
           "success"
         );
-        await fetchPeminjamanList();
       } catch (error) {
         console.error(error);
         Swal.fire(

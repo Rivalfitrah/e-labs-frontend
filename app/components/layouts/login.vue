@@ -57,6 +57,8 @@
 
       localStorage.setItem("user", JSON.stringify(response.data));
 
+      localStorage.setItem("last_login", new Date().toLocaleTimeString());
+
       await Swal.fire({
         icon: "success",
         title: "Login Berhasil",

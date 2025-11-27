@@ -11,18 +11,27 @@
   });
 
   const user = ref(null);
+  const lastLogin = ref("-");
 
-  onMounted(() => {
-    // Ambil data user dari localStorage
-    const dataUser = localStorage.getItem("user");
-    if (dataUser) {
-      try {
-        user.value = JSON.parse(dataUser);
-      } catch (e) {
-        console.error("Gagal parsing data user", e);
-      }
+
+onMounted(() => {
+  // Ambil data user
+  const dataUser = localStorage.getItem("user");
+  if (dataUser) {
+    try {
+      user.value = JSON.parse(dataUser);
+    } catch (e) {
+      console.error("Gagal parsing data user", e);
     }
-  });
+  }
+
+  // Ambil last login
+  const last = localStorage.getItem("last_login");
+  if (last) {
+    lastLogin.value = last;
+  }
+});
+
 
   // --- LOGIKA GAMBAR PROFIL OTOMATIS ---
   const userAvatar = computed(() => {
@@ -111,7 +120,7 @@
             <Clock class="w-4 h-4 text-utama"/>
             <span class="text-gray-500">Terakhir Login</span>
           </div>
-          <p class="font-semibold text-gray-800">09 November 2025</p>
+          <p class="font-semibold text-gray-800">{{ lastLogin }}</p>
         </div>
       </div>
     </div>

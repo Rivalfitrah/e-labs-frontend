@@ -1,7 +1,7 @@
 <script setup>
   import { CircleUserRound, LogOut, UserCircle } from "lucide-vue-next";
-  import { ref, onMounted, computed } from "vue";
-  import { useRouter } from "vue-router";
+  import { ref, onMounted, computed, watch } from "vue";
+  import { useRouter, useRoute } from "vue-router";
   import { Logout, getProfile } from "~/lib/api/auth";
   import { storage_URL } from "~/lib/base.js"; // Pastikan import base URL jika nanti butuh
   import Swal from "sweetalert2";
@@ -13,6 +13,7 @@
   const router = useRouter();
   const dropdownRef = ref(null);
   const user = ref(null);
+  const route = useRoute(); 
 
   onMounted(async () => {
     try {
@@ -43,6 +44,13 @@
   const goToProfile = () => {
     router.push('/admin/profile')
   }
+
+    watch(
+    () => route.fullPath,
+    () => {
+      isOpen.value = false;
+    }
+  );
 
   onClickOutside(dropdownRef, () => {
     isOpen.value = false;
