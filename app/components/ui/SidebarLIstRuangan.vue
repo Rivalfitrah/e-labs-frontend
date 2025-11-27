@@ -50,7 +50,7 @@ const getColorClass = (backgroundColor) => {
 <template>
   <div class="bg-white rounded-lg shadow-lg flex flex-col h-full max-h-[700px]">
     <!-- Header - Fixed -->
-    <div class="p-6 border-b border-gray-200 flex-shrink-0">
+    <div class="p-6 border-b border-gray-200 shrink-0">
       <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
         <MapPin class="w-5 h-5 text-primary" />
         Ruangan Terpakai

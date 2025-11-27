@@ -1,6 +1,5 @@
 import axios from "axios";
-
-// tes
+import { base_URL } from "../../base";
 
 interface pengajuanRuanganTerjadwal {
   nim: string;
@@ -12,8 +11,8 @@ const api = axios.create({
 
 export const getAllRuangan = async () => {
   try {
-    const res = await api.get("/ruangan");
-    return res.data.data; // langsung ambil array data-nya
+    const res = await axios.get(`${base_URL}/api/ruangan`);
+    return res.data.data;
   } catch (err) {
     console.error("Error fetching ruangan:", err);
     return [];
@@ -22,7 +21,9 @@ export const getAllRuangan = async () => {
 
 export const pengajuanRuanganTerjadwal = async (data: any) => {
   try {
-    const res = await api.post(`/peminjaman/ruangan/terjadwal`, data);
+    const res = await axios.post(`${base_URL}/api/peminjaman/ruangan/terjadwal`, data, {
+      withCredentials: true
+    });
     return res.data;
   } catch (error: any) {
     console.error('Error saat pengajuan ruangan terjadwal:', error);
@@ -32,7 +33,8 @@ export const pengajuanRuanganTerjadwal = async (data: any) => {
 
 export const isiFormPengajuanRuanganTerjadwal = async (id: string, data: any) => {
   try {
-    const res = await api.patch(`/peminjaman/ruangan/terjadwal/lengkapi/${id}`, data, {
+    const res = await axios.patch(`${base_URL}/api/peminjaman/ruangan/terjadwal/lengkapi/${id}`, data, {
+      withCredentials: true,
       headers: {
         'Content-Type': data instanceof FormData ? 'multipart/form-data' : 'application/json'
       }
@@ -44,12 +46,13 @@ export const isiFormPengajuanRuanganTerjadwal = async (id: string, data: any) =>
   }
 }
 
-
 export const getMatkulbyNIM = async (nim: string) => {
   try {
-    const res = await api.get(`/peminjaman/ruangan/matkul/${nim}`);
+    const res = await axios.get(`${base_URL}/api/peminjaman/ruangan/matkul/${nim}`, {
+      withCredentials: true
+    });
     console.log(res.data);
-    return res.data; // return semua: { success, message, data }
+    return res.data;
   } catch (err) {
     console.error("Error fetching matkul by NIM:", err);
     return { success: false, message: "Gagal mengambil data matkul", data: [] };
@@ -58,7 +61,10 @@ export const getMatkulbyNIM = async (nim: string) => {
 
 export const getRuanganRealtime = async (data: any = {}) => { 
   try {
-    const res = await api.get(`/ruangan/status/realtime`, data);
+    const res = await axios.get(`${base_URL}/api/ruangan/status/realtime`, {
+      withCredentials: true,
+      params: data
+    });
     return res.data;
   } catch (err) {
     console.error("Error fetching ruangan realtime:", err);
@@ -68,7 +74,10 @@ export const getRuanganRealtime = async (data: any = {}) => {
 
 export const getRuanganRealtimeState = async (data: any = {}) => {
   try {
-    const res = await api.get(`/ruangan/status/all/realtime`, data);
+    const res = await axios.get(`${base_URL}/api/ruangan/status/all/realtime`, {
+      withCredentials: true,
+      params: data
+    });
     return res.data;
   } catch (err) {
     console.error("Error fetching ruangan realtime state:", err);

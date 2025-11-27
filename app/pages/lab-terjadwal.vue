@@ -391,7 +391,7 @@ function getStatusStyle(status) {
         <div class="space-y-3 text-sm">
           <!-- Location -->
           <div class="flex items-start gap-2">
-            <MapPin class="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+            <MapPin class="w-4 h-4 text-gray-500 mt-0.5 shrink-0" />
             <div>
               <p class="font-medium text-gray-700">{{ tooltipData.ruangan }}</p>
               <p class="text-gray-500 text-xs">{{ tooltipData.gedung }}</p>
