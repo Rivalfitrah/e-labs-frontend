@@ -1,5 +1,7 @@
 # E=Labs Front end
 
+# Cara Menggunakan
+
 ## Pull or clone repository
 
 ```bash
