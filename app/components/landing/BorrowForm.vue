@@ -21,6 +21,8 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'submitted'])
 
+const currentYear = new Date().getFullYear();
+
 // === State lokal ===
 const selectedMatkul = ref('')
 const jamMulai = ref('')
@@ -35,15 +37,42 @@ const opsiKegiatan = ['Kuliah', 'Praktikum'];
 const errors = ref({
   jamMulai: "",
   jamSelesai: "",
-  kegiatan: "" // Tambah state error untuk kegiatan
+  kegiatan: "", // Tambah state error untuk kegiatan
 });
 
 // Validasi Zod
 const bookingSchema = z.object({
   jamMulai: z.string().min(1, "Jam mulai harus diisi"),
   jamSelesai: z.string().min(1, "Jam selesai harus diisi"),
-  kegiatan: z.string().min(1, "Jenis kegiatan harus dipilih"), // Validasi kegiatan wajib
+  kegiatan: z.string().min(1, "Jenis kegiatan harus dipilih"),
 }).refine((data) => {
+  // Validasi tahun harus tahun saat ini (tidak boleh dibawah atau diatas)
+  const startDate = new Date(data.jamMulai);
+  const endDate = new Date(data.jamSelesai);
+  const currentYear = new Date().getFullYear();
+  
+  if (startDate.getFullYear() !== currentYear || endDate.getFullYear() !== currentYear) {
+    return false;
+  }
+  return true;
+}, {
+  path: ["jamMulai"],
+  message: `Tahun harus ${currentYear}, tidak boleh tahun lalu atau tahun depan`
+}).refine((data) => {
+  // Validasi tidak boleh pilih tanggal yang sudah lewat
+  const start = new Date(data.jamMulai);
+  const now = new Date();
+  
+  // Set ke awal hari untuk perbandingan tanggal saja
+  const startDateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  return startDateOnly >= nowDateOnly;
+}, {
+  path: ["jamMulai"],
+  message: "Tidak boleh memilih tanggal yang sudah lewat"
+}).refine((data) => {
+  // Validasi jam mulai tidak boleh kurang dari 06:00
   const start = new Date(data.jamMulai);
   const startHour = start.getHours();
   return startHour >= 6;
@@ -51,6 +80,7 @@ const bookingSchema = z.object({
   path: ["jamMulai"],
   message: "Jam mulai tidak boleh kurang dari jam 06:00 pagi"
 }).refine((data) => {
+  // Validasi jam selesai tidak boleh lebih dari 18:00
   const end = new Date(data.jamSelesai);
   const endHour = end.getHours();
   return endHour < 18 || (endHour === 18 && end.getMinutes() === 0);
@@ -58,12 +88,49 @@ const bookingSchema = z.object({
   path: ["jamSelesai"],
   message: "Jam selesai tidak boleh lebih dari jam 18:00 (6 sore)"
 }).refine((data) => {
+  // Validasi jam selesai harus lebih besar dari jam mulai
   const start = new Date(data.jamMulai);
   const end = new Date(data.jamSelesai);
   return end > start;
 }, {
   path: ["jamSelesai"],
   message: "Jam selesai harus lebih besar dari jam mulai"
+}).refine((data) => {
+  // Validasi tanggal selesai tidak boleh lebih kecil dari tanggal mulai
+  const start = new Date(data.jamMulai);
+  const end = new Date(data.jamSelesai);
+  
+  const startDateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const endDateOnly = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  
+  return endDateOnly >= startDateOnly;
+}, {
+  path: ["jamSelesai"],
+  message: "Tanggal selesai tidak boleh lebih kecil dari tanggal mulai"
+}).refine((data) => {
+  // Validasi durasi peminjaman maksimal 7 hari
+  const start = new Date(data.jamMulai);
+  const end = new Date(data.jamSelesai);
+  
+  const diffTime = Math.abs(end - start);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays <= 7;
+}, {
+  path: ["jamSelesai"],
+  message: "Durasi peminjaman maksimal 7 hari"
+}).refine((data) => {
+  // Validasi minimal durasi peminjaman 1 jam
+  const start = new Date(data.jamMulai);
+  const end = new Date(data.jamSelesai);
+  
+  const diffTime = end - start;
+  const diffHours = diffTime / (1000 * 60 * 60);
+  
+  return diffHours >= 1;
+}, {
+  path: ["jamSelesai"],
+  message: "Durasi peminjaman minimal 1 jam"
 });
 
 // === Ambil matkul ===

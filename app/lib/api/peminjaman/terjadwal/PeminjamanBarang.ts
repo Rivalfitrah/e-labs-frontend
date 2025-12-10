@@ -1,6 +1,33 @@
 import { base_URL } from "~/lib/base";
 import axios from "axios";
 
+export interface PeminjamanBarangData {
+  ID_Peminjam: string;
+  tanggal_pinjam: string;
+  tanggal_kembali: string;
+  tujuan_peminjaman: string;
+  dokumen_pendukung?: string;
+  items: {
+    barang_id: number;
+    jumlah: number;
+    kegiatan?: string;
+  }[];
+}
+
+export async function createPeminjaman(data: PeminjamanBarangData) {
+    try {
+        const response = await axios.post(
+            `${base_URL}/api/peminjaman/barang/terjadwal`,
+            data,
+            { withCredentials: true }
+        );
+        console.log('Create peminjaman response:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating peminjaman:', error);
+        throw error;
+    }
+}
 
 export async function PeminjamanList() {
     try {
