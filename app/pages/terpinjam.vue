@@ -1,210 +1,162 @@
 <script lang="ts" setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { getRuanganRealtimeState } from '@/lib/api/ruangan/ruanganApi' 
-import { io } from "socket.io-client";
-import { base_URL } from '@/lib/base';
-
+import { ref, onMounted } from 'vue'
+import { getAllRuangan } from '@/lib/api/ruangan/ruanganApi'
 
 definePageMeta({
   layout: "landing-page",
 })
 
-// Setup Socket
-const socket = io(base_URL);
-
 // State
-const items = ref<any[]>([]);
-const now = ref(Date.now());
-let timerInterval: any = null;
+const rooms = ref<any[]>([])
+const loading = ref(true)
 
-// --- HELPER: Format Sisa Waktu ---
-const formatDuration = (ms: number) => {
-  if (isNaN(ms) || ms < 0) return "00:00:00"; 
-  const seconds = Math.floor((ms / 1000) % 60);
-  const minutes = Math.floor((ms / (1000 * 60)) % 60);
-  const hours = Math.floor((ms / (1000 * 60 * 60)));
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-};
+// Map status from API to display text (same as ruangan.vue)
+const getStatusText = (status: string) => {
+  if (status === 'PENDING') return 'Pending'
+  if (status === 'DIAJUKAN') return 'Diajukan'
+  if (status === 'DIPAKAI') return 'Dipakai'
+  return 'Tersedia' // Default
+}
 
-const formatTime = (ts: number) => {
-  if (!ts) return "-";
-  return new Date(ts).toLocaleTimeString('id-ID', {
-      hour: '2-digit', minute: '2-digit', hour12: false
-  });
-};
-
-// --- LOGIC UTAMA (Dengan Safety Check Anti-Crash) ---
-const getRealtimeInfo = (item: any) => {
-  // SAFETY CHECK: Kalau item null/undefined, return default biar gak error render
-  if (!item) {
-     return { text: '-', color: 'text-gray-400', bg: 'bg-gray-100', countdown: '-' };
-  }
-
-  // 1. KASUS KOSONG MURNI
-  if (item.status_raw === 'KOSONG') {
-     return { text: 'KOSONG', color: 'text-green-700', bg: 'bg-green-100', countdown: '-' };
-  }
-
-  const diff = (item.ts_selesai || 0) - now.value;
-
-  // 2. KASUS EARLY RELEASE (Status SELESAI)
-  if (item.status_raw === 'SELESAI') {
-    if (diff > 0) {
-        return { 
-            text: 'KOSONG (Sisa Waktu)', 
-            color: 'text-green-700', 
-            bg: 'bg-green-100', 
-            countdown: formatDuration(diff) 
-        };
-    } else {
-        return { 
-            text: 'KOSONG', 
-            color: 'text-green-700', 
-            bg: 'bg-green-100', 
-            countdown: '-' 
-        };
-    }
-  }
-
-  // 3. KASUS WAKTU HABIS
-  if (diff <= 0) {
-       return { text: 'Sesi Berakhir', color: 'text-gray-500', bg: 'bg-gray-100', countdown: '00:00:00' };
-  }
-
-  // 4. KASUS NORMAL
-  return { text: 'SEDANG DIGUNAKAN', color: 'text-red-700', bg: 'bg-red-100', countdown: formatDuration(diff) };
-};
-
-// --- ON MOUNTED ---
-onMounted(async () => {
+// Fetch all rooms (not just available)
+const fetchAvailableRooms = async () => {
+  loading.value = true
   try {
-    const response = await getRuanganRealtimeState({}); 
-
-    if (response && response.data) {
-      items.value = response.data.map((room: any) => {
-        return {
-           id_asli: room.id,
-           nama_ruangan: room.nama,
-           status_raw: room.status, 
-           
-           kegiatan: room.currentBooking ? room.currentBooking.kegiatan : "-",
-           ts_selesai: room.currentBooking ? room.currentBooking.jam_selesai_ts : null,
-           
-           jadwal_display: room.currentBooking 
-              ? `Sampai ${formatTime(room.currentBooking.jam_selesai_ts)}` 
-              : "-"
-        };
-      });
+    const allRooms = await getAllRuangan()
+    // Show ALL rooms like ruangan.vue does
+    if (allRooms && Array.isArray(allRooms)) {
+      rooms.value = allRooms
     }
-
-    // SOCKET LISTENER
-    socket.on("room_update", (updatedRoom: any) => {
-        console.log("⚡ Room Update:", updatedRoom);
-        
-        const index = items.value.findIndex((i: any) => i.id_asli === updatedRoom.id);
-        
-        if (index !== -1) {
-            // Update data lokal
-            items.value[index] = {
-               id_asli: updatedRoom.id,
-               nama_ruangan: updatedRoom.nama,
-               status_raw: updatedRoom.status,
-               kegiatan: updatedRoom.currentBooking ? updatedRoom.currentBooking.kegiatan : "-",
-               ts_selesai: updatedRoom.currentBooking ? updatedRoom.currentBooking.jam_selesai_ts : null,
-               jadwal_display: updatedRoom.currentBooking 
-                  ? `Sampai ${formatTime(updatedRoom.currentBooking.jam_selesai_ts)}` 
-                  : "-"
-            };
-            
-            if (updatedRoom.status !== 'KOSONG') {
-                // Hapus dari tampilan secara realtime!
-                items.value.splice(index, 1); 
-                
-                console.log(`❌ Ruangan ${updatedRoom.nama} dihapus dari list karena sudah terisi.`);
-            }
-        }
-    });
-
-    // TIMER
-    timerInterval = setInterval(() => {
-      now.value = Date.now();
-    }, 1000);
-
-  } catch (e) {
-    console.error("Error:", e);
+  } catch (error) {
+    console.error('Error fetching available rooms:', error)
+  } finally {
+    loading.value = false
   }
-});
+}
 
-onUnmounted(() => {
-  if (timerInterval) clearInterval(timerInterval);
-  socket.off("room_update");
-  socket.disconnect(); 
-});
+// Refresh data
+const refreshData = () => {
+  fetchAvailableRooms()
+}
+
+onMounted(() => {
+  fetchAvailableRooms()
+})
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">Status Ruangan Real-time</h1>
-      <p class="text-sm text-gray-500">Memantau ketersediaan ruangan secara langsung</p>
-    </div>
-    
-    <div class="overflow-x-auto bg-white shadow-lg rounded-lg border border-gray-200">
-      <table class="w-full text-left border-collapse">
-        <thead class="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Ruangan</th>
-            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Kegiatan</th>
-            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Jadwal Selesai</th>
-            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status Saat Ini</th>
-            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Sisa Waktu</th>
-          </tr>
-        </thead>
-
-        <tbody class="divide-y divide-gray-100">
-          <tr 
-            v-for="item in items" 
-            :key="item.id_asli" 
-            class="hover:bg-blue-50 transition duration-150 ease-in-out"
+  <div class="min-h-screen bg-gray-50 p-6">
+    <!-- Header -->
+    <div class="max-w-7xl mx-auto mb-6">
+      <div class="bg-white rounded-lg shadow p-6 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">Ruangan Tersedia</h1>
+          <p class="text-sm text-gray-500 mt-1">Daftar ruangan yang sedang kosong</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <p class="text-sm text-gray-500">Total Ruangan</p>
+            <p class="text-3xl font-bold text-green-600">{{ rooms.length }}</p>
+          </div>
+          <button 
+            @click="refreshData"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            :disabled="loading"
           >
-            <td class="px-6 py-4 font-medium text-gray-900">
-              {{ item.nama_ruangan }}
-            </td>
-            <td class="px-6 py-4 text-gray-600 text-sm">
-              {{ item.kegiatan }}
-            </td>
-            <td class="px-6 py-4 text-gray-600 text-sm font-mono">
-              {{ item.jadwal_display }}
-            </td>
-            <td class="px-6 py-4">
-              <span 
-                class="px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"
-                :class="getRealtimeInfo(item).bg + ' ' + getRealtimeInfo(item).color"
-              >
-                <span class="w-2 h-2 rounded-full bg-current"></span>
-                {{ getRealtimeInfo(item).text }}
-              </span>
-            </td>
-            <td class="px-6 py-4 text-center">
-              <span class="font-mono text-lg font-bold text-gray-700 tracking-widest">
-                {{ getRealtimeInfo(item).countdown }}
-              </span>
-            </td>
-          </tr>
+            <svg v-if="!loading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <span v-else>...</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
-          <tr v-if="items.length === 0">
-            <td colspan="5" class="px-6 py-8 text-center text-gray-400 italic">
-              Belum ada data ruangan...
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Table -->
+    <div class="max-w-7xl mx-auto">
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-gray-100 border-b">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                No
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Nama Ruangan
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Gedung
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Kapasitas
+              </th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Status
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <!-- Loading State -->
+            <tr v-if="loading">
+              <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                Memuat data...
+              </td>
+            </tr>
+
+            <!-- Data Rows -->
+            <tr 
+              v-else
+              v-for="(room, index) in rooms" 
+              :key="room.id"
+              class="hover:bg-gray-50"
+            >
+              <td class="px-6 py-4 text-sm text-gray-900">
+                {{ index + 1 }}
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm font-medium text-gray-900">{{ room.nama_ruangan }}</div>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-600">
+                {{ room.gedung || '-' }}
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-600">
+                {{ room.kapasitas || '-' }}
+              </td>
+              <td class="px-6 py-4 text-center">
+                <span 
+                  class="inline-block px-3 py-1.5 text-xs font-bold uppercase tracking-wide rounded-full border"
+                  :class="{
+                    'bg-green-100 text-green-700 border-green-300': getStatusText(room.status) === 'Tersedia',
+                    'bg-yellow-100 text-yellow-700 border-yellow-300': getStatusText(room.status) === 'Pending',
+                    'bg-red-100 text-red-700 border-red-300': getStatusText(room.status) === 'Diajukan',
+                    'bg-gray-100 text-gray-700 border-gray-300': getStatusText(room.status) === 'Dipakai'
+                  }"
+                >
+                  {{ getStatusText(room.status) }}
+                </span>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr v-if="!loading && rooms.length === 0">
+              <td colspan="5" class="px-6 py-12 text-center">
+                <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                <p class="text-gray-500 font-medium">Tidak ada ruangan tersedia</p>
+                <p class="text-gray-400 text-sm mt-1">Semua ruangan sedang digunakan</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-tr {
-  transition: all 0.2s;
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

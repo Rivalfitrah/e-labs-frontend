@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import FlatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import { isiFormPengajuanRuanganTerjadwal } from '@/lib/api/ruangan/ruanganApi';
@@ -24,12 +24,17 @@ const emit = defineEmits(['close', 'submitted'])
 const currentYear = new Date().getFullYear();
 
 // === State lokal ===
-const selectedMatkul = ref('')
+const selectedMatkul = ref('') // Menyimpan ID Matkul
 const jamMulai = ref('')
 const jamSelesai = ref('')
-const kegiatan = ref('') // Variabel utama untuk kegiatan
+const kegiatan = ref('') 
 const availableMatkul = ref([])
 const isLoading = ref(false)
+
+// === State untuk Searchable Dropdown ===
+const searchQuery = ref('') // Teks yang diketik user
+const isDropdownOpen = ref(false) // Status buka/tutup dropdown
+const dropdownRef = ref(null) // Referensi elemen untuk click outside
 
 // Opsi dropdown kegiatan
 const opsiKegiatan = ['Kuliah', 'Praktikum'];
@@ -37,21 +42,19 @@ const opsiKegiatan = ['Kuliah', 'Praktikum'];
 const errors = ref({
   jamMulai: "",
   jamSelesai: "",
-  kegiatan: "", // Tambah state error untuk kegiatan
+  kegiatan: "",
 });
 
-// Validasi Zod
+// === Validasi Zod ===
 const bookingSchema = z.object({
   jamMulai: z.string().min(1, "Jam mulai harus diisi"),
   jamSelesai: z.string().min(1, "Jam selesai harus diisi"),
   kegiatan: z.string().min(1, "Jenis kegiatan harus dipilih"),
 }).refine((data) => {
-  // Validasi tahun harus tahun saat ini (tidak boleh dibawah atau diatas)
-  const startDate = new Date(data.jamMulai);
-  const endDate = new Date(data.jamSelesai);
+  const start = new Date(data.jamMulai);
+  const end = new Date(data.jamSelesai);
   const currentYear = new Date().getFullYear();
-  
-  if (startDate.getFullYear() !== currentYear || endDate.getFullYear() !== currentYear) {
+  if (start.getFullYear() !== currentYear || end.getFullYear() !== currentYear) {
     return false;
   }
   return true;
@@ -59,20 +62,15 @@ const bookingSchema = z.object({
   path: ["jamMulai"],
   message: `Tahun harus ${currentYear}, tidak boleh tahun lalu atau tahun depan`
 }).refine((data) => {
-  // Validasi tidak boleh pilih tanggal yang sudah lewat
   const start = new Date(data.jamMulai);
   const now = new Date();
-  
-  // Set ke awal hari untuk perbandingan tanggal saja
   const startDateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
   const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
   return startDateOnly >= nowDateOnly;
 }, {
   path: ["jamMulai"],
   message: "Tidak boleh memilih tanggal yang sudah lewat"
 }).refine((data) => {
-  // Validasi jam mulai tidak boleh kurang dari 06:00
   const start = new Date(data.jamMulai);
   const startHour = start.getHours();
   return startHour >= 6;
@@ -80,7 +78,6 @@ const bookingSchema = z.object({
   path: ["jamMulai"],
   message: "Jam mulai tidak boleh kurang dari jam 06:00 pagi"
 }).refine((data) => {
-  // Validasi jam selesai tidak boleh lebih dari 18:00
   const end = new Date(data.jamSelesai);
   const endHour = end.getHours();
   return endHour < 18 || (endHour === 18 && end.getMinutes() === 0);
@@ -88,7 +85,6 @@ const bookingSchema = z.object({
   path: ["jamSelesai"],
   message: "Jam selesai tidak boleh lebih dari jam 18:00 (6 sore)"
 }).refine((data) => {
-  // Validasi jam selesai harus lebih besar dari jam mulai
   const start = new Date(data.jamMulai);
   const end = new Date(data.jamSelesai);
   return end > start;
@@ -96,41 +92,74 @@ const bookingSchema = z.object({
   path: ["jamSelesai"],
   message: "Jam selesai harus lebih besar dari jam mulai"
 }).refine((data) => {
-  // Validasi tanggal selesai tidak boleh lebih kecil dari tanggal mulai
   const start = new Date(data.jamMulai);
   const end = new Date(data.jamSelesai);
-  
   const startDateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
   const endDateOnly = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-  
   return endDateOnly >= startDateOnly;
 }, {
   path: ["jamSelesai"],
   message: "Tanggal selesai tidak boleh lebih kecil dari tanggal mulai"
 }).refine((data) => {
-  // Validasi durasi peminjaman maksimal 7 hari
   const start = new Date(data.jamMulai);
   const end = new Date(data.jamSelesai);
-  
   const diffTime = Math.abs(end - start);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
   return diffDays <= 7;
 }, {
   path: ["jamSelesai"],
   message: "Durasi peminjaman maksimal 7 hari"
 }).refine((data) => {
-  // Validasi minimal durasi peminjaman 1 jam
   const start = new Date(data.jamMulai);
   const end = new Date(data.jamSelesai);
-  
   const diffTime = end - start;
   const diffHours = diffTime / (1000 * 60 * 60);
-  
   return diffHours >= 1;
 }, {
   path: ["jamSelesai"],
   message: "Durasi peminjaman minimal 1 jam"
+});
+
+// === Logic Searchable Dropdown ===
+// Filter matkul berdasarkan query pencarian
+const filteredMatkul = computed(() => {
+  if (!searchQuery.value) {
+    return availableMatkul.value;
+  }
+  return availableMatkul.value.filter((m) => 
+    m.matkul.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
+
+// Saat user memilih item dari list
+const selectMatkul = (matkul) => {
+  selectedMatkul.value = matkul.id;     // Simpan ID untuk dikirim ke API
+  searchQuery.value = matkul.matkul;    // Tampilkan nama di input
+  isDropdownOpen.value = false;         // Tutup dropdown
+};
+
+// Saat user mengetik di input search
+const onSearchInput = (e) => {
+  searchQuery.value = e.target.value;
+  isDropdownOpen.value = true;
+  // Jika user mengubah teks, reset ID yang tersimpan agar tidak submit ID yang salah
+  selectedMatkul.value = '';
+};
+
+// Tutup dropdown jika klik di luar elemen
+const handleClickOutside = (event) => {
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
+    isDropdownOpen.value = false;
+  }
+};
+
+// Setup listener click outside
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside);
 });
 
 // === Ambil matkul ===
@@ -148,8 +177,15 @@ const fetchMatkul = async () => {
 watch(
   () => props.show,
   (newVal) => {
-    if (newVal && props.nim) {
-      fetchMatkul()
+    if (newVal) {
+      // Reset form state saat modal dibuka
+      selectedMatkul.value = '';
+      searchQuery.value = '';
+      isDropdownOpen.value = false;
+      
+      if (props.nim) {
+        fetchMatkul()
+      }
     }
   },
   { immediate: true }
@@ -157,14 +193,12 @@ watch(
 
 // === Submit form ===
 const submitForm = async () => {
-  // Reset errors
   errors.value = { jamMulai: "", jamSelesai: "", kegiatan: "" };
 
-  // Validasi Zod SEBELUM submit
   const result = bookingSchema.safeParse({
     jamMulai: jamMulai.value,
     jamSelesai: jamSelesai.value,
-    kegiatan: kegiatan.value, // Masukkan kegiatan ke validasi
+    kegiatan: kegiatan.value,
   });
 
   if (!result.success) {
@@ -172,10 +206,19 @@ const submitForm = async () => {
     errors.value.jamMulai = fieldErrors.jamMulai ? fieldErrors.jamMulai[0] : "";
     errors.value.jamSelesai = fieldErrors.jamSelesai ? fieldErrors.jamSelesai[0] : "";
     errors.value.kegiatan = fieldErrors.kegiatan ? fieldErrors.kegiatan[0] : "";
-    return; // STOP jika validasi gagal
+    return;
   }
 
-  // Jika validasi berhasil, lanjut submit
+  // Validasi manual untuk Matkul (karena tidak masuk Zod schema di atas)
+  if (!selectedMatkul.value) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Perhatian',
+      text: 'Silakan pilih Mata Kuliah terlebih dahulu.'
+    });
+    return;
+  }
+
   isLoading.value = true;
   try {
     const formData = new FormData();
@@ -244,22 +287,41 @@ const closeForm = () => {
         <p class="text-xs text-red-500 mt-1">{{ errors.kegiatan }}</p>
       </div>
 
-      <div>
+      <div ref="dropdownRef" class="relative">
         <label class="block text-sm font-medium text-gray-700 mb-1">Mata Kuliah</label>
-        <select 
-          v-model="selectedMatkul"
+        
+        <input 
+          type="text"
+          :value="searchQuery" 
+          @input="onSearchInput"
+          @focus="isDropdownOpen = true"
+          placeholder="Cari atau pilih mata kuliah..."
           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+          autocomplete="off"
+        />
+
+        <ul 
+          v-if="isDropdownOpen" 
+          class="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg max-h-60 overflow-y-auto"
         >
-          <option value="" disabled>Pilih Mata Kuliah</option>
-          <option v-for="matkul in availableMatkul" :key="matkul.id" :value="matkul.id">
+          <li 
+            v-for="matkul in filteredMatkul" 
+            :key="matkul.id"
+            @click="selectMatkul(matkul)"
+            class="px-3 py-2 hover:bg-green-50 cursor-pointer text-sm text-gray-700 hover:text-green-700 border-b last:border-b-0"
+          >
             {{ matkul.matkul }}
-          </option>
-        </select>
-        <p v-if="availableMatkul.length === 0" class="text-xs text-red-500 mt-1">
+          </li>
+
+          <li v-if="filteredMatkul.length === 0" class="px-3 py-2 text-sm text-gray-500 text-center">
+            Mata kuliah tidak ditemukan.
+          </li>
+        </ul>
+
+        <p v-if="availableMatkul.length === 0 && !isLoading" class="text-xs text-red-500 mt-1">
           Tidak ada mata kuliah terdaftar untuk NIM ini.
         </p>
       </div>
-
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Jam Mulai</label>
